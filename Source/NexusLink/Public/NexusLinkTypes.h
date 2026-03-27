@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -5,7 +7,16 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSubsystemTypes.h"
 #include "NexusLog.h"
+#include "Online/CoreOnline.h"
+#include "GameFramework/OnlineReplStructs.h"
 #include "NexusLinkTypes.generated.h"
+
+UENUM(BlueprintType)
+enum class ENexusBlueprintLibraryOutputResult : uint8
+{
+	IsValid,
+	NotValid
+};
 
 /**
  * Represents the lifecycle state of an online session.

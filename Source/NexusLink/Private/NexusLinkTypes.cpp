@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #include "NexusLinkTypes.h"
 #include "Interfaces/OnlinePresenceInterface.h"
 

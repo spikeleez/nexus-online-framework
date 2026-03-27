@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"

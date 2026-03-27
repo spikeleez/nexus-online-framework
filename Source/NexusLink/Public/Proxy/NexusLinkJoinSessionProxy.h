@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -33,7 +35,7 @@ public:
 	 * @param SessionName Session name. Defaults to the name configured in Plugin Settings.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session", DisplayName = "Join Nexus Session", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", AdvancedDisplay = "SessionName"))
-	static UNexusLinkJoinSessionProxy* JoinNexusLinkSession(UObject* WorldContextObject, const FNexusLinkSearchResult& SearchResult, FName SessionName = NAME_None);
+	static UNexusLinkJoinSessionProxy* JoinNexusLinkSession(UObject* WorldContextObject, const FNexusLinkSearchResult& SearchResult, FName SessionName = NAME_None, const bool bAutoTravel = true);
 
 	//~ Begin UOnlineBlueprintCallProxyBase Interface
 	virtual void Activate() override;
@@ -51,5 +53,6 @@ private:
 
 	FNexusLinkSearchResult SearchResult;
 	FName SessionName;
+	uint8 bAutoTravel:1;
 	FDelegateHandle NativeDelegateHandle;
 };

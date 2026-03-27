@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -5,6 +7,8 @@
 #include "NexusLinkTypes.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "NexusLinkSessionManager.generated.h"
+
+class UGameInstance;
 
 /**
  * @class UNexusLinkSessionManager
@@ -87,7 +91,7 @@ public:
 	 * @return True if the async request was successfully started.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session")
-	bool JoinSession(const FName SessionName, const FNexusLinkSearchResult& SearchResult);
+	bool JoinSession(const FName SessionName, const FNexusLinkSearchResult& SearchResult, const bool bAutoTravel = true);
 
 	/**
 	 * Destroy an active session.
@@ -154,6 +158,12 @@ private:
 	void OnFindSessionsComplete(bool bWasSuccessful);
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
+	
+	/** Perform ClientTravel to the host after a successful join. */
+	void TravelToSession(const FName SessionName);
+
+	/** Perform ServerTravel to the starting level after session creation. */
+	void TravelToStartingLevel();
 
 private:
 	/** Weak reference to the owning game instance. */
@@ -171,6 +181,12 @@ private:
 
 	/** Session name for the currently active async operation. */
 	FName ActiveSessionName;
+
+	/** Whether the current join operation should auto-travel on success. */
+	uint8 bPendingAutoTravel:1;
+
+	/** Cached starting level from the current create operation. */
+	FString PendingStartingLevel;
 
 	FDelegateHandle OnCreateSessionCompleteDelegateHandle;
 	FDelegateHandle OnFindSessionsCompleteDelegateHandle;

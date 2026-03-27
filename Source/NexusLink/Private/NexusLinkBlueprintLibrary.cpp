@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #include "NexusLinkBlueprintLibrary.h"
 #include "NexusLinkSubsystem.h"
 #include "NexusLinkSessionManager.h"
@@ -7,6 +9,7 @@
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/World.h"
 
 UNexusLinkSubsystem* UNexusLinkBlueprintLibrary::GetNexusLinkSubsystem(const UObject* WorldContextObject)
 {

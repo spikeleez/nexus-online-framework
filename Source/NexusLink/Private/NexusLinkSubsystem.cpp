@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #include "NexusLinkSubsystem.h"
 #include "NexusLinkSessionManager.h"
 #include "NexusLinkFriendManager.h"
@@ -5,6 +7,7 @@
 #include "OnlineSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "NexusLog.h"
+#include "Engine/World.h"
 
 UNexusLinkSubsystem::UNexusLinkSubsystem()
 	: SessionManager(nullptr)

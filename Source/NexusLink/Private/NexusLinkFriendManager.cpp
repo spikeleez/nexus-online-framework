@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #include "NexusLinkFriendManager.h"
 #include "NexusLog.h"
 #include "NexusLinkSettings.h"

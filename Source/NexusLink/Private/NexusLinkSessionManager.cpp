@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #include "NexusLinkSessionManager.h"
 #include "NexusLog.h"
 #include "NexusLinkSettings.h"
@@ -6,10 +8,13 @@
 #include "Online/OnlineSessionNames.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/World.h"
 
 UNexusLinkSessionManager::UNexusLinkSessionManager()
 	: CurrentSessionState(ENexusLinkSessionState::NoSession)
 	, ActiveSessionName(NAME_None)
+	, bPendingAutoTravel(false)
+	, PendingStartingLevel(FString())
 {
 
 }
@@ -80,6 +85,7 @@ bool UNexusLinkSessionManager::CreateSession(const FName SessionName, const FNex
 	HostParams.ToOnlineSessionSettings(NewSettings);
 
 	ActiveSessionName = SessionName;
+	PendingStartingLevel = HostParams.StartingLevel;
 
 	// Bind completion delegate.
 	OnCreateSessionCompleteDelegateHandle = SessionInterface->AddOnCreateSessionCompleteDelegate_Handle(
@@ -88,13 +94,17 @@ bool UNexusLinkSessionManager::CreateSession(const FName SessionName, const FNex
 
 	SetSessionState(SessionName, ENexusLinkSessionState::Creating);
 
-	NEXUS_LOG(LogNexusLink, Log, TEXT("Creating session '%s' (MaxPlayers: %d, Presence: %s)..."), *SessionName.ToString(), HostParams.MaxNumPlayers, HostParams.bUsesPresence ? TEXT("true") : TEXT("false"));
+	NEXUS_LOG(LogNexusLink, Log, TEXT("CreateSession: Creating session '%s' (MaxPlayers: %d, Presence: %s, StartingLevel: '%s')..."),
+		*SessionName.ToString(), HostParams.MaxNumPlayers,
+		HostParams.bUsesPresence ? TEXT("true") : TEXT("false"),
+		PendingStartingLevel.IsEmpty() ? TEXT("none") : *PendingStartingLevel);
 
 	if (!SessionInterface->CreateSession(*LocalPlayerId, SessionName, NewSettings))
 	{
 		NEXUS_LOG(LogNexusLink, Error, TEXT("Platform CreateSession call failed."));
 		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteDelegateHandle);
 		SetSessionState(SessionName, ENexusLinkSessionState::NoSession);
+		PendingStartingLevel.Empty();
 		BroadcastCreateResult(ENexusLinkCreateSessionResult::Failure);
 		return false;
 	}
@@ -168,7 +178,7 @@ bool UNexusLinkSessionManager::FindSessions(const FNexusLinkSearchParams& Search
 	return true;
 }
 
-bool UNexusLinkSessionManager::JoinSession(const FName SessionName, const FNexusLinkSearchResult& SearchResult)
+bool UNexusLinkSessionManager::JoinSession(const FName SessionName, const FNexusLinkSearchResult& SearchResult, const bool bAutoTravel /*= true*/)
 {
 	if (!SearchResult.IsValid())
 	{
@@ -203,18 +213,20 @@ bool UNexusLinkSessionManager::JoinSession(const FName SessionName, const FNexus
 	}
 
 	ActiveSessionName = SessionName;
+	bPendingAutoTravel = bAutoTravel;
 
 	// Bind completion delegate.
 	OnJoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
 		FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete)
 	);
 
-	NEXUS_LOG(LogNexusLink, Log, TEXT("Joining session '%s' (Host: %s)..."), *SessionName.ToString(), *SearchResult.GetOwnerUsername());
+	NEXUS_LOG(LogNexusLink, Log, TEXT("Joining session '%s' (Host: %s, AutoTravel: %s)..."), *SessionName.ToString(), *SearchResult.GetOwnerUsername(), bAutoTravel ? TEXT("true") : TEXT("false"));
 
 	if (!SessionInterface->JoinSession(*LocalPlayerId, SessionName, SearchResult.OnlineResult))
 	{
 		NEXUS_LOG(LogNexusLink, Error, TEXT("Platform JoinSession call failed."));
 		SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(OnJoinSessionCompleteDelegateHandle);
+		bPendingAutoTravel = false;
 		BroadcastJoinResult(ENexusLinkJoinSessionResult::Failure);
 		return false;
 	}
@@ -366,7 +378,15 @@ void UNexusLinkSessionManager::OnCreateSessionComplete(FName SessionName, bool b
 	{
 		NEXUS_LOG(LogNexusLink, Log, TEXT("Session '%s' created successfully."), *SessionName.ToString());
 		SetSessionState(SessionName, ENexusLinkSessionState::Pending);
+
+		// Broadcast before travel so listeners can react (show loading screen, etc).
 		BroadcastCreateResult(ENexusLinkCreateSessionResult::Success);
+
+		// Auto-travel to starting level if one was specified.
+		if (!PendingStartingLevel.IsEmpty())
+		{
+			TravelToStartingLevel();
+		}
 	}
 	else
 	{
@@ -374,6 +394,34 @@ void UNexusLinkSessionManager::OnCreateSessionComplete(FName SessionName, bool b
 		SetSessionState(SessionName, ENexusLinkSessionState::NoSession);
 		BroadcastCreateResult(ENexusLinkCreateSessionResult::Failure);
 	}
+
+	PendingStartingLevel.Empty();
+}
+
+void UNexusLinkSessionManager::TravelToStartingLevel()
+{
+	if (!GameInstanceRef.IsValid())
+	{
+		NEXUS_LOG(LogNexusLink, Error, TEXT("GameInstance is invalid."));
+		return;
+	}
+
+	UWorld* World = GameInstanceRef->GetWorld();
+	if (!World)
+	{
+		NEXUS_LOG(LogNexusLink, Error, TEXT("World is invalid."));
+		return;
+	}
+
+	// Append ?listen if not already present — the host must be a listen server.
+	FString TravelURL = PendingStartingLevel;
+	if (!TravelURL.Contains(TEXT("listen")))
+	{
+		TravelURL.Append(TEXT("?listen"));
+	}
+
+	NEXUS_LOG(LogNexusLink, Log, TEXT("ServerTravel to '%s'..."), *TravelURL);
+	World->ServerTravel(TravelURL);
 }
 
 void UNexusLinkSessionManager::OnFindSessionsComplete(bool bWasSuccessful)
@@ -449,7 +497,49 @@ void UNexusLinkSessionManager::OnJoinSessionComplete(FName SessionName, EOnJoinS
 		break;
 	}
 
+	// Broadcast before travel so listeners can react (show loading screen, etc).
 	BroadcastJoinResult(FinalResult);
+
+	// Auto-travel to the host if join was successful and auto-travel was requested.
+	if (FinalResult == ENexusLinkJoinSessionResult::Success && bPendingAutoTravel)
+	{
+		TravelToSession(SessionName);
+	}
+
+	bPendingAutoTravel = false;
+}
+
+void UNexusLinkSessionManager::TravelToSession(const FName SessionName)
+{
+	FString ConnectString;
+	if (!GetSessionConnectString(SessionName, ConnectString) || ConnectString.IsEmpty())
+	{
+		NEXUS_LOG(LogNexusLink, Error, TEXT("Failed to get connect string for session '%s'."), *SessionName.ToString());
+		return;
+	}
+
+	if (!GameInstanceRef.IsValid())
+	{
+		NEXUS_LOG(LogNexusLink, Error, TEXT("GameInstance is invalid."));
+		return;
+	}
+
+	UWorld* World = GameInstanceRef->GetWorld();
+	if (!World)
+	{
+		NEXUS_LOG(LogNexusLink, Error, TEXT("World is invalid."));
+		return;
+	}
+
+	APlayerController* PC = World->GetFirstPlayerController();
+	if (!PC)
+	{
+		NEXUS_LOG(LogNexusLink, Error, TEXT("No PlayerController found."));
+		return;
+	}
+
+	NEXUS_LOG(LogNexusLink, Log, TEXT("Traveling to '%s'..."), *ConnectString);
+	PC->ClientTravel(ConnectString, TRAVEL_Absolute);
 }
 
 void UNexusLinkSessionManager::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)

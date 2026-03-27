@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #include "Proxy/NexusLinkDestroySessionProxy.h"
 #include "NexusLinkSubsystem.h"
 #include "NexusLinkSessionManager.h"

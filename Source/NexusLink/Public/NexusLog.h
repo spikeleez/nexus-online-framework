@@ -1,6 +1,10 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Misc/Paths.h"
+#include "Logging/LogMacros.h"
 
 /** Nexus log category. */
 NEXUSLINK_API DECLARE_LOG_CATEGORY_EXTERN(LogNexusLink, Log, All);

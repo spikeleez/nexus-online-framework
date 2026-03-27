@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,6 +10,8 @@
 #include "Interfaces/OnlinePresenceInterface.h"
 #include "Interfaces/OnlineExternalUIInterface.h"
 #include "NexusLinkFriendManager.generated.h"
+
+class UGameInstance;
 
 /**
  * @class UNexusLinkFriendManager

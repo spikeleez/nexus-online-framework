@@ -1,3 +1,5 @@
+// Copyright (c) 2026 spikeleez. All rights reserved.
+
 #include "NexusLinkSettings.h"
 
 UNexusLinkSettings::UNexusLinkSettings(const FObjectInitializer& ObjectInitializer)
@@ -7,10 +9,10 @@ UNexusLinkSettings::UNexusLinkSettings(const FObjectInitializer& ObjectInitializ
 	, bDefaultUsesPresence(true)
 	, bDefaultAllowInvites(true)
 	, bDefaultAllowJoinViaPresence(true)
-	, DefaultMaxSearchResults(20)
-	, bAutoReadFriendsList(true)
 	, DefaultGameSessionName(NAME_GameSession)
 	, bAutoRegisterInviteHandlers(true)
+	, DefaultMaxSearchResults(100)
+	, bAutoReadFriendsList(true)
 {
 	
 }
