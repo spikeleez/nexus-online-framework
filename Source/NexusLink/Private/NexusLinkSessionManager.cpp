@@ -9,6 +9,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
+#include "Engine/Engine.h"
 
 UNexusLinkSessionManager::UNexusLinkSessionManager()
 	: CurrentSessionState(ENexusLinkSessionState::NoSession)
@@ -420,8 +421,8 @@ void UNexusLinkSessionManager::TravelToStartingLevel()
 		TravelURL.Append(TEXT("?listen"));
 	}
 
-	NEXUS_LOG(LogNexusLink, Log, TEXT("ServerTravel to '%s'..."), *TravelURL);
-	World->ServerTravel(TravelURL);
+	NEXUS_LOG(LogNexusLink, Log, TEXT("Traveling to '%s'..."), *TravelURL);
+	GEngine->SetClientTravel(World, *TravelURL, TRAVEL_Absolute);
 }
 
 void UNexusLinkSessionManager::OnFindSessionsComplete(bool bWasSuccessful)
