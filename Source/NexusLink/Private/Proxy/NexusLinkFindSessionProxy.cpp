@@ -5,7 +5,7 @@
 #include "NexusLinkSessionManager.h"
 #include "NexusLog.h"
 
-UNexusLinkFindSessionProxy* UNexusLinkFindSessionProxy::FindNexusLinkSessions(UObject* InWorldContextObject, const FNexusLinkSearchParams& InSearchParams)
+UNexusLinkFindSessionProxy* UNexusLinkFindSessionProxy::FindNexusSessions(UObject* InWorldContextObject, const FNexusLinkSearchParams& InSearchParams)
 {
 	UNexusLinkFindSessionProxy* Proxy = NewObject<UNexusLinkFindSessionProxy>();
 	Proxy->WorldContextObject = InWorldContextObject;

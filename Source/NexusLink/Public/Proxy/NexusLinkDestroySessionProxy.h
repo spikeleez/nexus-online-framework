@@ -34,7 +34,7 @@ public:
 	 * @param SessionName Session name to destroy. Defaults to the name configured in Plugin Settings.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session", DisplayName = "Destroy Nexus Session", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", AdvancedDisplay = "SessionName", Keywords = "Destroy"))
-	static UNexusLinkDestroySessionProxy* DestroyNexusLinkSession(UObject* WorldContextObject, FName SessionName = NAME_None);
+	static UNexusLinkDestroySessionProxy* DestroyNexusSession(UObject* WorldContextObject, FName SessionName = NAME_None);
 
 	//~ Begin UOnlineBlueprintCallProxyBase Interface
 	virtual void Activate() override;

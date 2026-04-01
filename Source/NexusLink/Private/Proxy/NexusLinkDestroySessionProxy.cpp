@@ -6,7 +6,7 @@
 #include "NexusLinkSettings.h"
 #include "NexusLog.h"
 
-UNexusLinkDestroySessionProxy* UNexusLinkDestroySessionProxy::DestroyNexusLinkSession(UObject* InWorldContextObject, FName InSessionName /*= NAME_None*/)
+UNexusLinkDestroySessionProxy* UNexusLinkDestroySessionProxy::DestroyNexusSession(UObject* InWorldContextObject, FName InSessionName /*= NAME_None*/)
 {
 	UNexusLinkDestroySessionProxy* Proxy = NewObject<UNexusLinkDestroySessionProxy>();
 	Proxy->WorldContextObject = InWorldContextObject;

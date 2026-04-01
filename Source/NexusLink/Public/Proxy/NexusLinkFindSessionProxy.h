@@ -39,7 +39,7 @@ public:
 	 * @param SearchParams Parameters for the search query.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session", DisplayName = "Find Nexus Sessions", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", Keywords = "Find"))
-	static UNexusLinkFindSessionProxy* FindNexusLinkSessions(UObject* WorldContextObject, const FNexusLinkSearchParams& SearchParams);
+	static UNexusLinkFindSessionProxy* FindNexusSessions(UObject* WorldContextObject, const FNexusLinkSearchParams& SearchParams);
 
 	//~ Begin UOnlineBlueprintCallProxyBase Interface
 	virtual void Activate() override;

@@ -6,7 +6,7 @@
 #include "NexusLinkSettings.h"
 #include "NexusLog.h"
 
-UNexusLinkCreateSessionProxy* UNexusLinkCreateSessionProxy::CreateNexusLinkSession(UObject* InWorldContextObject, const FNexusLinkHostParams& InHostParams, FName InSessionName /*= NAME_None*/)
+UNexusLinkCreateSessionProxy* UNexusLinkCreateSessionProxy::CreateNexusSession(UObject* InWorldContextObject, const FNexusLinkHostParams& InHostParams, FName InSessionName /*= NAME_None*/)
 {
 	UNexusLinkCreateSessionProxy* Proxy = NewObject<UNexusLinkCreateSessionProxy>();
 	Proxy->WorldContextObject = InWorldContextObject;

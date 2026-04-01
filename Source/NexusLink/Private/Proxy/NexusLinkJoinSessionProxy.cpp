@@ -6,7 +6,7 @@
 #include "NexusLinkSettings.h"
 #include "NexusLog.h"
 
-UNexusLinkJoinSessionProxy* UNexusLinkJoinSessionProxy::JoinNexusLinkSession(UObject* InWorldContextObject, const FNexusLinkSearchResult& InSearchResult, FName InSessionName /*= NAME_None*/, const bool bInAutoTravel /*= true*/)
+UNexusLinkJoinSessionProxy* UNexusLinkJoinSessionProxy::JoinNexusSession(UObject* InWorldContextObject, const FNexusLinkSearchResult& InSearchResult, FName InSessionName /*= NAME_None*/, const bool bInAutoTravel /*= true*/)
 {
 	UNexusLinkJoinSessionProxy* Proxy = NewObject<UNexusLinkJoinSessionProxy>();
 	Proxy->WorldContextObject = InWorldContextObject;

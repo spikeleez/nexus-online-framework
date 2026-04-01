@@ -38,7 +38,7 @@ public:
 	 * @param SessionName Session name. Defaults to the name configured in Plugin Settings.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session", DisplayName = "Create Nexus Session", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", AdvancedDisplay = "SessionName", Keywords = "Create"))
-	static UNexusLinkCreateSessionProxy* CreateNexusLinkSession(UObject* WorldContextObject, const FNexusLinkHostParams& HostParams, FName SessionName = NAME_None);
+	static UNexusLinkCreateSessionProxy* CreateNexusSession(UObject* WorldContextObject, const FNexusLinkHostParams& HostParams, FName SessionName = NAME_None);
 
 	//~ Begin UOnlineBlueprintCallProxyBase Interface
 	virtual void Activate() override;
