@@ -19,11 +19,11 @@ class NEXUSLINK_API UNexusLinkJoinSessionProxy : public UOnlineBlueprintCallProx
 
 public:
 	/** Fired when the session is joined successfully. */
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Events")
 	FEmptyOnlineDelegate OnSuccess;
 
 	/** Fired when joining the session fails. */
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Events")
 	FEmptyOnlineDelegate OnFailure;
 
 public:
@@ -34,18 +34,17 @@ public:
 	 * @param SearchResult The session to join (from a previous FindSessions call).
 	 * @param SessionName Session name. Defaults to the name configured in Plugin Settings.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session", DisplayName = "Join Nexus Session", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", AdvancedDisplay = "SessionName"))
+	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session", DisplayName = "Join Nexus Session", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", AdvancedDisplay = "SessionName", Keywords = "Join"))
 	static UNexusLinkJoinSessionProxy* JoinNexusLinkSession(UObject* WorldContextObject, const FNexusLinkSearchResult& SearchResult, FName SessionName = NAME_None, const bool bAutoTravel = true);
 
 	//~ Begin UOnlineBlueprintCallProxyBase Interface
 	virtual void Activate() override;
+	virtual void BeginDestroy() override;
 	//~ End UOnlineBlueprintCallProxyBase Interface
 
-	virtual void BeginDestroy() override;
-
 private:
+	UFUNCTION()
 	void OnJoinComplete(ENexusLinkJoinSessionResult Result);
-	void Cleanup();
 
 private:
 	UPROPERTY()

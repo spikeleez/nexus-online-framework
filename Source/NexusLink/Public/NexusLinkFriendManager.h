@@ -30,15 +30,15 @@ class NEXUSLINK_API UNexusLinkFriendManager : public UObject
 public:
 	/** Fired when the friends list finishes loading. */
 	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Friends|Events")
-	FNexusLinkOnFriendsListReady OnFriendsListReady;
+	FNexusLinkOnFriendsListReadySignature OnFriendsListReady;
 
 	/** Fired when a session invite is received from another player. */
 	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Friends|Events")
-	FNexusLinkOnSessionInviteReceived OnSessionInviteReceived;
+	FNexusLinkOnSessionInviteReceivedSignature OnSessionInviteReceived;
 
 	/** Fired when the local user accepts a session invite (e.g. from Steam Overlay). */
 	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Friends|Events")
-	FNexusLinkOnSessionInviteAccepted OnSessionInviteAccepted;
+	FNexusLinkOnSessionInviteAcceptedSignature OnSessionInviteAccepted;
 
 public:
 	UNexusLinkFriendManager();

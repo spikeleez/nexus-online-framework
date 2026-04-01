@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "1.0",
 	"EngineVersion": "5.7.0",
-	"FriendlyName": "Nexus Link Online Framework",
+	"FriendlyName": "Nexus Online Framework",
 	"Description": "Online Service Framework with crossplay sessions, friend invites, and extensible architecture.",
 	"Category": "Networking",
 	"CreatedBy": "",

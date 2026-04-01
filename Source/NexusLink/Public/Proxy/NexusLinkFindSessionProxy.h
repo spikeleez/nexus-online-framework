@@ -38,18 +38,17 @@ public:
 	 * @param WorldContextObject World context.
 	 * @param SearchParams Parameters for the search query.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session", DisplayName = "Find Nexus Sessions", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True"))
+	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session", DisplayName = "Find Nexus Sessions", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", Keywords = "Find"))
 	static UNexusLinkFindSessionProxy* FindNexusLinkSessions(UObject* WorldContextObject, const FNexusLinkSearchParams& SearchParams);
 
 	//~ Begin UOnlineBlueprintCallProxyBase Interface
 	virtual void Activate() override;
+	virtual void BeginDestroy() override;
 	//~ End UOnlineBlueprintCallProxyBase Interface
 
-	virtual void BeginDestroy() override;
-
 private:
+	UFUNCTION()
 	void OnFindComplete(ENexusLinkFindSessionsResult Result, const TArray<FNexusLinkSearchResult>& Results);
-	void Cleanup();
 
 private:
 	UPROPERTY()

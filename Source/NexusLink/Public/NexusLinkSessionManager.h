@@ -10,6 +10,8 @@
 
 class UGameInstance;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnNetworkErrorSignature, const FString&, ErrorMessage);
+
 /**
  * @class UNexusLinkSessionManager
  * 
@@ -28,29 +30,36 @@ class NEXUSLINK_API UNexusLinkSessionManager : public UObject
 
 public:
 	/** Fired when a session is created. */
-	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events")
-	FNexusLinkOnSessionCreated OnSessionCreated;
+	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events", meta = (DisplayName = "On Session Created"))
+	FNexusLinkOnSessionCreatedSignature OnSessionCreatedEvent;
 
 	/** Fired when sessions are found. */
-	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events")
-	FNexusLinkOnSessionsFound OnSessionsFound;
+	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events", meta = (DisplayName = "On Session Found"))
+	FNexusLinkOnSessionsFoundSignature OnSessionsFoundEvent;
 
 	/** Fired when a session is joined. */
-	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events")
-	FNexusLinkOnSessionJoined OnSessionJoined;
+	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events", meta = (DisplayName = "On Session Joined"))
+	FNexusLinkOnSessionJoinedSignature OnSessionJoinedEvent;
 
 	/** Fired when a session is destroyed. */
-	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events")
-	FNexusLinkOnSessionDestroyed OnSessionDestroyed;
+	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events", meta = (DisplayName = "On Session Destroyed"))
+	FNexusLinkOnSessionDestroyedSignature OnSessionDestroyedEvent;
 
 	/** Fired when the session state changes. */
-	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events")
-	FNexusLinkOnSessionStateChanged OnSessionStateChanged;
+	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events", meta = (DisplayName = "On Session State Changed"))
+	FNexusLinkOnSessionStateChangedSignature OnSessionStateChangedEvent;
 
-	FNexusLinkNativeOnSessionCreated NativeOnSessionCreated;
-	FNexusLinkNativeOnSessionsFound NativeOnSessionsFound;
-	FNexusLinkNativeOnSessionJoined NativeOnSessionJoined;
-	FNexusLinkNativeOnSessionDestroyed NativeOnSessionDestroyed;
+	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events", meta = (DisplayName = "On Network Error"))
+	FNexusLinkOnNetworkErrorSignature OnNetworkErrorEvent;
+
+	UPROPERTY(BlueprintAssignable, Category = "NexusLink|Sessions|Events", meta = (DisplayName = "On Session Updated"))
+	FNexusLinkOnSessionUpdatedSignature OnSessionUpdatedEvent;
+
+	FNexusLinkNativeOnSessionCreatedSignature NativeOnSessionCreated;
+	FNexusLinkNativeOnSessionsFoundSignature NativeOnSessionsFound;
+	FNexusLinkNativeOnSessionJoinedSignature NativeOnSessionJoined;
+	FNexusLinkNativeOnSessionDestroyedSignature NativeOnSessionDestroyed;
+	FNexusLinkNativeOnSessionUpdatedSignature NativeOnSessionUpdated;
 
 public:
 	UNexusLinkSessionManager();
@@ -71,6 +80,16 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session")
 	bool CreateSession(const FName SessionName, const FNexusLinkHostParams& HostParams);
+
+	/**
+	 * Updates the settings of an active session (e.g., change map, change max players).
+	 *
+	 * @param SessionName Name of the session to be updated.
+	 * @param NewHostParams New parameters to override the old ones.
+	 * @return True if the asynchronous request was successfully initiated.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session")
+	bool UpdateSession(const FName SessionName, const FNexusLinkHostParams& NewHostParams);
 
 	/**
 	 * Find online sessions matching the given parameters.
@@ -148,16 +167,21 @@ protected:
 	 * Broadcast a result to both the dynamic (Blueprint) and native (C++) delegates.
 	 * Centralizes the dual-broadcast pattern used by all operations.
 	 */
-	void BroadcastCreateResult(const ENexusLinkCreateSessionResult Result);
-	void BroadcastFindResult(const ENexusLinkFindSessionsResult Result, const TArray<FNexusLinkSearchResult>& Results);
-	void BroadcastJoinResult(const ENexusLinkJoinSessionResult Result);
-	void BroadcastDestroyResult(const ENexusLinkDestroySessionResult Result);
+	void SendCreateSessionResult(const ENexusLinkCreateSessionResult Result);
+	void SendFindSessionResult(const ENexusLinkFindSessionsResult Result, const TArray<FNexusLinkSearchResult>& Results);
+	void SendJoinSessionResult(const ENexusLinkJoinSessionResult Result);
+	void SendDestroySessionResult(const ENexusLinkDestroySessionResult Result);
+	void SendUpdateSessionResult(const ENexusLinkUpdateSessionResult Result);
 
 private:
-	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
-	void OnFindSessionsComplete(bool bWasSuccessful);
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
-	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
+	virtual void OnSessionCreationComplete(FName SessionName, bool bWasSuccessful);
+	virtual void OnSessionFoundComplete(bool bWasSuccessful);
+	virtual void OnSessionJoinedComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	virtual void OnSessionDestroyedComplete(FName SessionName, bool bWasSuccessful);
+	virtual void OnSessionUpdatedComplete(FName SessionName, bool bWasSuccessfully);
+
+	virtual void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
+	virtual void OnSessionFailure(const FUniqueNetId& NetId, ESessionFailure::Type FailureType);
 	
 	/** Perform ClientTravel to the host after a successful join. */
 	void TravelToSession(const FName SessionName);
@@ -192,4 +216,7 @@ private:
 	FDelegateHandle OnFindSessionsCompleteDelegateHandle;
 	FDelegateHandle OnJoinSessionCompleteDelegateHandle;
 	FDelegateHandle OnDestroySessionCompleteDelegateHandle;
+	FDelegateHandle OnNetworkFailureDelegateHandle;
+	FDelegateHandle OnSessionFailureDelegateHandle;
+	FDelegateHandle OnSessionUpdateCompleteDelegateHandle;
 };

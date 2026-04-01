@@ -18,6 +18,15 @@ enum class ENexusBlueprintLibraryOutputResult : uint8
 	NotValid
 };
 
+UENUM(BlueprintType)
+enum class ENexusLinkUpdateSessionResult : uint8
+{
+	Success,
+	Failure,
+	NoOnlineSubsystem,
+	NoSession
+};
+
 /**
  * Represents the lifecycle state of an online session.
  * Mirrors EOnlineSessionState::Type but exposed to Blueprint with NexusLink naming.
@@ -797,34 +806,37 @@ struct NEXUSLINK_API FNexusLinkPendingInvite
 };
 
 /** Fired when a session is created. */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnSessionCreated, ENexusLinkCreateSessionResult, Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnSessionCreatedSignature, ENexusLinkCreateSessionResult, Result);
 
 /** Fired when sessions are found. */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusLinkOnSessionsFound, ENexusLinkFindSessionsResult, Result, const TArray<FNexusLinkSearchResult>&, Results);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusLinkOnSessionsFoundSignature, ENexusLinkFindSessionsResult, Result, const TArray<FNexusLinkSearchResult>&, Results);
 
 /** Fired when a session is joined. */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnSessionJoined, ENexusLinkJoinSessionResult, Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnSessionJoinedSignature, ENexusLinkJoinSessionResult, Result);
 
 /** Fired when a session is destroyed. */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnSessionDestroyed, ENexusLinkDestroySessionResult, Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnSessionDestroyedSignature, ENexusLinkDestroySessionResult, Result);
 
 /** Fired when the session state changes. */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusLinkOnSessionStateChanged, FName, SessionName, ENexusLinkSessionState, NewState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusLinkOnSessionStateChangedSignature, FName, SessionName, ENexusLinkSessionState, NewState);
 
 /** Fired when the friends list is read. */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusLinkOnFriendsListReady, bool, bWasSuccessful, const TArray<FNexusLinkOnlineFriend>&, Friends);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusLinkOnFriendsListReadySignature, bool, bWasSuccessful, const TArray<FNexusLinkOnlineFriend>&, Friends);
 
 /** Fired when a session invite is received from another player. */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnSessionInviteReceived, const FNexusLinkPendingInvite&, Invite);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnSessionInviteReceivedSignature, const FNexusLinkPendingInvite&, Invite);
 
 /** Fired when the local user accepts a session invite (e.g. from Steam Overlay). */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnSessionInviteAccepted, const FNexusLinkSearchResult&, InviteResult);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnSessionInviteAcceptedSignature, const FNexusLinkSearchResult&, InviteResult);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusLinkOnSessionUpdatedSignature, const ENexusLinkUpdateSessionResult, Result);
 
 // ============================================================================
 // Delegates — Native (C++ only, for internal proxy binding)
 // ============================================================================
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FNexusLinkNativeOnSessionCreated, ENexusLinkCreateSessionResult /*Result*/);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FNexusLinkNativeOnSessionsFound, ENexusLinkFindSessionsResult /*Result*/, const TArray<FNexusLinkSearchResult>& /*Results*/);
-DECLARE_MULTICAST_DELEGATE_OneParam(FNexusLinkNativeOnSessionJoined, ENexusLinkJoinSessionResult /*Result*/);
-DECLARE_MULTICAST_DELEGATE_OneParam(FNexusLinkNativeOnSessionDestroyed, ENexusLinkDestroySessionResult /*Result*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FNexusLinkNativeOnSessionCreatedSignature, ENexusLinkCreateSessionResult /*Result*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FNexusLinkNativeOnSessionsFoundSignature, ENexusLinkFindSessionsResult /*Result*/, const TArray<FNexusLinkSearchResult>& /*Results*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FNexusLinkNativeOnSessionJoinedSignature, ENexusLinkJoinSessionResult /*Result*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FNexusLinkNativeOnSessionDestroyedSignature, ENexusLinkDestroySessionResult /*Result*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FNexusLinkNativeOnSessionUpdatedSignature, const ENexusLinkUpdateSessionResult);

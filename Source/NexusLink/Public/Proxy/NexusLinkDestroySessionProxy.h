@@ -33,18 +33,18 @@ public:
 	 * @param WorldContextObject World context.
 	 * @param SessionName Session name to destroy. Defaults to the name configured in Plugin Settings.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session", DisplayName = "Destroy Nexus Session", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", AdvancedDisplay = "SessionName"))
+	UFUNCTION(BlueprintCallable, Category = "NexusLink|Session", DisplayName = "Destroy Nexus Session", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", AdvancedDisplay = "SessionName", Keywords = "Destroy"))
 	static UNexusLinkDestroySessionProxy* DestroyNexusLinkSession(UObject* WorldContextObject, FName SessionName = NAME_None);
 
 	//~ Begin UOnlineBlueprintCallProxyBase Interface
 	virtual void Activate() override;
+	virtual void BeginDestroy() override;
 	//~ End UOnlineBlueprintCallProxyBase Interface
 
-	virtual void BeginDestroy() override;
 
 private:
+	UFUNCTION()
 	void OnDestroyComplete(ENexusLinkDestroySessionResult Result);
-	void Cleanup();
 
 private:
 	UPROPERTY()

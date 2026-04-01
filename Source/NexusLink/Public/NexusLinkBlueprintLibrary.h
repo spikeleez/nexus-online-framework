@@ -25,17 +25,13 @@ class NEXUSLINK_API UNexusLinkBlueprintLibrary : public UBlueprintFunctionLibrar
 	GENERATED_BODY()
 	
 public:
-	/** Get the NexusLink subsystem from any world context. */
-	UFUNCTION(BlueprintPure, Category = "NexusLink", meta = (WorldContext = "WorldContextObject"))
-	static UNexusLinkSubsystem* GetNexusLinkSubsystem(const UObject* WorldContextObject);
-
 	/** Get the session manager from any world context. */
-	UFUNCTION(BlueprintPure, Category = "NexusLink", meta = (WorldContext = "WorldContextObject"))
-	static UNexusLinkSessionManager* GetNexusLinkSessionManager(const UObject* WorldContextObject);
+	UFUNCTION(BlueprintCallable, Category = "NexusLink", meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
+	static UNexusLinkSessionManager* GetNexusSessionManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
 
 	/** Get the friend manager from any world context. */
-	UFUNCTION(BlueprintPure, Category = "NexusLink", meta = (WorldContext = "WorldContextObject"))
-	static UNexusLinkFriendManager* GetNexusLinkFriendManager(const UObject* WorldContextObject);
+	UFUNCTION(BlueprintCallable, Category = "NexusLink", meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
+	static UNexusLinkFriendManager* GetNexusFriendManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
 
 	/** @return Whether any online subsystem is available. */
 	UFUNCTION(BlueprintPure, Category = "NexusLink|Utility")
@@ -46,12 +42,12 @@ public:
 	static FString GetActiveOnlineSubsystemName();
 
 	/** @return The local player's unique net ID from the online subsystem. */
-	UFUNCTION(BlueprintPure, Category = "NexusLink|Utility", meta = (WorldContext = "WorldContextObject"))
-	static FUniqueNetIdRepl GetLocalPlayerUniqueId(const UObject* WorldContextObject);
+	UFUNCTION(BlueprintCallable, Category = "NexusLink|Utility", meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
+	static FUniqueNetIdRepl GetLocalPlayerUniqueId(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
 
 	/** @return The local player's display name from the online identity interface. */
-	UFUNCTION(BlueprintPure, Category = "NexusLink|Utility", meta = (WorldContext = "WorldContextObject"))
-	static FString GetLocalPlayerDisplayName(const UObject* WorldContextObject);
+	UFUNCTION(BlueprintCallable, Category = "NexusLink|Utility", meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
+	static FString GetLocalPlayerDisplayName(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
 
 	/** Create a FNexusLinkHostParams populated with defaults from Plugin Settings. */
 	UFUNCTION(BlueprintPure, Category = "NexusLink|Session")

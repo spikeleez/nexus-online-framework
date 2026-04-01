@@ -7,10 +7,7 @@
 #include "NexusLinkSettings.generated.h"
 
 /**
- * @class UNexusLinkSettings 
- * 
  * Global configuration for the NexusLink plugin.
- * Accessible via Project Settings -> Game -> Nexus Link Settings.
  *
  * These settings serve as default values that can be overridden at runtime
  * through FNexusLinkHostParams and FNexusLinkSearchParams.

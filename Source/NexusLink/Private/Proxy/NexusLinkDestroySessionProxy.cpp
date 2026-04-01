@@ -22,40 +22,21 @@ void UNexusLinkDestroySessionProxy::Activate()
 	{
 		NEXUS_LOG(LogNexusLink, Error, TEXT("NexusLink subsystem or session manager unavailable."));
 		OnFailure.Broadcast();
+		SetReadyToDestroy();
 		return;
 	}
 
-	UNexusLinkSessionManager* SessionMgr = Subsystem->GetSessionManager();
+	UNexusLinkSessionManager* SessionManager = Subsystem->GetSessionManager();
 
-	NativeDelegateHandle = SessionMgr->NativeOnSessionDestroyed.AddUObject(this, &ThisClass::OnDestroyComplete);
-
-	if (!SessionMgr->DestroySession(SessionName))
+	NativeDelegateHandle = SessionManager->NativeOnSessionDestroyed.AddUObject(this, &ThisClass::OnDestroyComplete);
+	if (!SessionManager->DestroySession(SessionName))
 	{
-		Cleanup();
+		OnFailure.Broadcast();
+		SetReadyToDestroy();
 	}
 }
 
 void UNexusLinkDestroySessionProxy::BeginDestroy()
-{
-	Cleanup();
-	Super::BeginDestroy();
-}
-
-void UNexusLinkDestroySessionProxy::OnDestroyComplete(ENexusLinkDestroySessionResult Result)
-{
-	Cleanup();
-
-	if (Result == ENexusLinkDestroySessionResult::Success)
-	{
-		OnSuccess.Broadcast();
-	}
-	else
-	{
-		OnFailure.Broadcast();
-	}
-}
-
-void UNexusLinkDestroySessionProxy::Cleanup()
 {
 	if (NativeDelegateHandle.IsValid())
 	{
@@ -66,4 +47,20 @@ void UNexusLinkDestroySessionProxy::Cleanup()
 		}
 		NativeDelegateHandle.Reset();
 	}
+
+	Super::BeginDestroy();
+}
+
+void UNexusLinkDestroySessionProxy::OnDestroyComplete(ENexusLinkDestroySessionResult Result)
+{
+	if (Result == ENexusLinkDestroySessionResult::Success)
+	{
+		OnSuccess.Broadcast();
+	}
+	else
+	{
+		OnFailure.Broadcast();
+	}
+
+	SetReadyToDestroy();
 }

@@ -23,43 +23,26 @@ void UNexusLinkCreateSessionProxy::Activate()
 	{
 		NEXUS_LOG(LogNexusLink, Error, TEXT("NexusLink subsystem or session manager unavailable."));
 		OnFailure.Broadcast();
+		SetReadyToDestroy();
 		return;
 	}
 
-	UNexusLinkSessionManager* SessionMgr = Subsystem->GetSessionManager();
+	UNexusLinkSessionManager* SessionManager = Subsystem->GetSessionManager();
 
 	// Bind to native delegate so this proxy receives the completion callback.
-	NativeDelegateHandle = SessionMgr->NativeOnSessionCreated.AddUObject(this, &ThisClass::OnCreateComplete);
+	NativeDelegateHandle = SessionManager->NativeOnSessionCreated.AddUObject(this, &ThisClass::OnCreateComplete);
 
-	if (!SessionMgr->CreateSession(SessionName, HostParams))
+	bool bStartedSuccessfully = SessionManager->CreateSession(SessionName, HostParams);
+	if (!bStartedSuccessfully)
 	{
 		// CreateSession returned false synchronously — delegate was already fired inside CreateSession,
 		// which means OnCreateComplete already ran. Just clean up in case it didn't.
-		Cleanup();
+		OnFailure.Broadcast();
+		SetReadyToDestroy();
 	}
 }
 
 void UNexusLinkCreateSessionProxy::BeginDestroy()
-{
-	Cleanup();
-	Super::BeginDestroy();
-}
-
-void UNexusLinkCreateSessionProxy::OnCreateComplete(ENexusLinkCreateSessionResult Result)
-{
-	Cleanup();
-
-	if (Result == ENexusLinkCreateSessionResult::Success)
-	{
-		OnSuccess.Broadcast();
-	}
-	else
-	{
-		OnFailure.Broadcast();
-	}
-}
-
-void UNexusLinkCreateSessionProxy::Cleanup()
 {
 	if (NativeDelegateHandle.IsValid())
 	{
@@ -70,4 +53,20 @@ void UNexusLinkCreateSessionProxy::Cleanup()
 		}
 		NativeDelegateHandle.Reset();
 	}
+
+	Super::BeginDestroy();
+}
+
+void UNexusLinkCreateSessionProxy::OnCreateComplete(ENexusLinkCreateSessionResult Result)
+{
+	if (Result == ENexusLinkCreateSessionResult::Success)
+	{
+		OnSuccess.Broadcast();
+	}
+	else
+	{
+		OnFailure.Broadcast();
+	}
+
+	SetReadyToDestroy();
 }

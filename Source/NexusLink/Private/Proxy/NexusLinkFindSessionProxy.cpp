@@ -20,40 +20,26 @@ void UNexusLinkFindSessionProxy::Activate()
 	{
 		NEXUS_LOG(LogNexusLink, Error, TEXT("NexusLink subsystem or session manager unavailable."));
 		OnFailure.Broadcast(TArray<FNexusLinkSearchResult>());
+		SetReadyToDestroy();
 		return;
 	}
 
-	UNexusLinkSessionManager* SessionMgr = Subsystem->GetSessionManager();
+	UNexusLinkSessionManager* SessionManager = Subsystem->GetSessionManager();
 
-	NativeDelegateHandle = SessionMgr->NativeOnSessionsFound.AddUObject(this, &ThisClass::OnFindComplete);
+	// Bind to native delegate so this proxy receives the completion callback.
+	NativeDelegateHandle = SessionManager->NativeOnSessionsFound.AddUObject(this, &ThisClass::OnFindComplete);
 
-	if (!SessionMgr->FindSessions(SearchParams))
+	bool bFoundSuccessfully = SessionManager->FindSessions(SearchParams);
+	if (!bFoundSuccessfully)
 	{
-		Cleanup();
+		// FindSession returned false synchronously — delegate was already fired inside FindSession,
+		// which means OnFindComplete already ran. Just clean up in case it didn't.
+		OnFailure.Broadcast(TArray<FNexusLinkSearchResult>());
+		SetReadyToDestroy();
 	}
 }
 
 void UNexusLinkFindSessionProxy::BeginDestroy()
-{
-	Cleanup();
-	Super::BeginDestroy();
-}
-
-void UNexusLinkFindSessionProxy::OnFindComplete(ENexusLinkFindSessionsResult Result, const TArray<FNexusLinkSearchResult>& Results)
-{
-	Cleanup();
-
-	if (Result == ENexusLinkFindSessionsResult::Success || Result == ENexusLinkFindSessionsResult::NoResults)
-	{
-		OnSuccess.Broadcast(Results);
-	}
-	else
-	{
-		OnFailure.Broadcast(Results);
-	}
-}
-
-void UNexusLinkFindSessionProxy::Cleanup()
 {
 	if (NativeDelegateHandle.IsValid())
 	{
@@ -64,4 +50,20 @@ void UNexusLinkFindSessionProxy::Cleanup()
 		}
 		NativeDelegateHandle.Reset();
 	}
+
+	Super::BeginDestroy();
+}
+
+void UNexusLinkFindSessionProxy::OnFindComplete(ENexusLinkFindSessionsResult Result, const TArray<FNexusLinkSearchResult>& Results)
+{
+	if (Result == ENexusLinkFindSessionsResult::Success || Result == ENexusLinkFindSessionsResult::NoResults)
+	{
+		OnSuccess.Broadcast(Results);
+	}
+	else
+	{
+		OnFailure.Broadcast(Results);
+	}
+
+	SetReadyToDestroy();
 }

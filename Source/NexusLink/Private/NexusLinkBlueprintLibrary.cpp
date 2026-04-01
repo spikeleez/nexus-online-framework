@@ -11,21 +11,44 @@
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 
-UNexusLinkSubsystem* UNexusLinkBlueprintLibrary::GetNexusLinkSubsystem(const UObject* WorldContextObject)
-{
-	return UNexusLinkSubsystem::Get(WorldContextObject);
-}
-
-UNexusLinkSessionManager* UNexusLinkBlueprintLibrary::GetNexusLinkSessionManager(const UObject* WorldContextObject)
+UNexusLinkSessionManager* UNexusLinkBlueprintLibrary::GetNexusSessionManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
 	UNexusLinkSubsystem* Subsystem = UNexusLinkSubsystem::Get(WorldContextObject);
-	return Subsystem ? Subsystem->GetSessionManager() : nullptr;
+	if (!Subsystem)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return nullptr;
+	}
+
+	UNexusLinkSessionManager* SessionManager = Subsystem->GetSessionManager();
+	if (!SessionManager)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return nullptr;
+	}
+
+	OutResult = ENexusBlueprintLibraryOutputResult::IsValid;
+	return SessionManager;
 }
 
-UNexusLinkFriendManager* UNexusLinkBlueprintLibrary::GetNexusLinkFriendManager(const UObject* WorldContextObject)
+UNexusLinkFriendManager* UNexusLinkBlueprintLibrary::GetNexusFriendManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
 	UNexusLinkSubsystem* Subsystem = UNexusLinkSubsystem::Get(WorldContextObject);
-	return Subsystem ? Subsystem->GetFriendManager() : nullptr;
+	if (!Subsystem)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return nullptr;
+	}
+
+	UNexusLinkFriendManager* FriendManager = Subsystem->GetFriendManager();
+	if (!FriendManager)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return nullptr;
+	}
+
+	OutResult = ENexusBlueprintLibraryOutputResult::IsValid;
+	return FriendManager;
 }
 
 bool UNexusLinkBlueprintLibrary::IsOnlineSubsystemAvailable()
@@ -38,30 +61,56 @@ FString UNexusLinkBlueprintLibrary::GetActiveOnlineSubsystemName()
 	return UNexusLinkSubsystem::GetOnlineSubsystemName();
 }
 
-FUniqueNetIdRepl UNexusLinkBlueprintLibrary::GetLocalPlayerUniqueId(const UObject* WorldContextObject)
+FUniqueNetIdRepl UNexusLinkBlueprintLibrary::GetLocalPlayerUniqueId(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
-	if (!WorldContextObject) return FUniqueNetIdRepl();
+	if (!WorldContextObject)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return FUniqueNetIdRepl();
+	}
 
 	const UWorld* World = WorldContextObject->GetWorld();
-	if (!World) return FUniqueNetIdRepl();
+	if (!World)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return FUniqueNetIdRepl();
+	}
 
 	UGameInstance* GameInstance = World->GetGameInstance();
-	if (!GameInstance) return FUniqueNetIdRepl();
+	if (!GameInstance)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return FUniqueNetIdRepl();
+	}
 
 	ULocalPlayer* LocalPlayer = GameInstance->GetFirstGamePlayer();
-	if (!LocalPlayer) return FUniqueNetIdRepl();
+	if (!LocalPlayer)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return FUniqueNetIdRepl();
+	}
 
+	OutResult = ENexusBlueprintLibraryOutputResult::IsValid;
 	return LocalPlayer->GetPreferredUniqueNetId();
 }
 
-FString UNexusLinkBlueprintLibrary::GetLocalPlayerDisplayName(const UObject* WorldContextObject)
+FString UNexusLinkBlueprintLibrary::GetLocalPlayerDisplayName(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
 	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
-	if (!OnlineSub) return FString();
+	if (!OnlineSub)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return FString();
+	}
 
 	IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
-	if (!Identity.IsValid()) return FString();
+	if (!Identity.IsValid())
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return FString();
+	}
 
+	OutResult = ENexusBlueprintLibraryOutputResult::IsValid;
 	return Identity->GetPlayerNickname(0);
 }
 
