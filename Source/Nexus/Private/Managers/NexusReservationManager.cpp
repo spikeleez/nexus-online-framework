@@ -6,8 +6,6 @@
 #include "PartyBeaconState.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
-#include "OnlineSubsystem.h"
-#include "Interfaces/OnlineSessionInterface.h"
 
 UNexusReservationManager::UNexusReservationManager(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

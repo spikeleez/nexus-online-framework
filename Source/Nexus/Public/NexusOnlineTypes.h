@@ -317,6 +317,197 @@ FORCEINLINE FString LexToString(ENexusReservationResult Result)
 }
 
 /**
+ * Status of a single party slot.
+ * The leader is never stored as a slot — they live in FNexusPartyState::LeaderId.
+ */
+UENUM(BlueprintType)
+enum class ENexusPartyMemberStatus : uint8
+{
+	/** Player is an active member of the party. */
+	Active,
+	
+	/** Player was kicked by the party leader. */
+	Kicked,
+	
+	/** Player left the party voluntarily. */
+	Left
+};
+
+inline const TCHAR* LexToString(ENexusPartyMemberStatus Status)
+{
+	switch (Status)
+	{
+	case ENexusPartyMemberStatus::Active: return TEXT("Active");
+	case ENexusPartyMemberStatus::Kicked: return TEXT("Kicked");
+	case ENexusPartyMemberStatus::Left:   return TEXT("Left");
+	default:							  return TEXT("Unknown");
+	}
+}
+
+/** Result of a party operation (create, join, kick, leave). */
+UENUM(BlueprintType)
+enum class ENexusPartyResult : uint8
+{
+	Success,
+	
+	/** The party is at max capacity. */
+	PartyFull,
+	
+	/** Player is already in this party. */
+	AlreadyInParty,
+	
+	/** Only the party leader may perform this action. */
+	NotLeader,
+	
+	/** The specified member was not found in the party. */
+	MemberNotFound,
+	
+	/** Local player is not currently in a party. */
+	NotInParty,
+	
+	/** The party system is not in a valid state for this operation. */
+	InvalidState,
+	
+	/** Connection to the party beacon host failed. */
+	ConnectionFailed
+};
+
+inline const TCHAR* LexToString(ENexusPartyResult Result)
+{
+	switch (Result)
+	{
+	case ENexusPartyResult::Success:          return TEXT("Success");
+	case ENexusPartyResult::PartyFull:        return TEXT("PartyFull");
+	case ENexusPartyResult::AlreadyInParty:   return TEXT("AlreadyInParty");
+	case ENexusPartyResult::NotLeader:        return TEXT("NotLeader");
+	case ENexusPartyResult::MemberNotFound:   return TEXT("MemberNotFound");
+	case ENexusPartyResult::NotInParty:       return TEXT("NotInParty");
+	case ENexusPartyResult::InvalidState:     return TEXT("InvalidState");
+	case ENexusPartyResult::ConnectionFailed: return TEXT("ConnectionFailed");
+	default:                                  return TEXT("Unknown");
+	}
+}
+
+/**
+ * Represents one non-leader player inside a party.
+ * The leader is stored separately in FNexusPartyState::LeaderId.
+ */
+USTRUCT(BlueprintType)
+struct NEXUS_API FNexusPartySlot
+{
+	GENERATED_BODY()
+	
+	/** Unique online ID of the member. */
+	UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+	FUniqueNetIdRepl MemberId;
+
+	/** Display name for the party roster. Do not use for identity checks. */
+	UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+	FString DisplayName;
+
+	/** Current membership status. */
+	UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+	ENexusPartyMemberStatus Status;
+
+	/**
+	 * Platform time (seconds since app start) when this member joined.
+	 * Used for ordering/display only.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+	float JoinTime = 0.f;
+
+	FNexusPartySlot() = default;
+
+	FNexusPartySlot(const FUniqueNetIdRepl& InId, const FString& InName)
+		: MemberId(InId)
+		, DisplayName(InName)
+		, Status(ENexusPartyMemberStatus::Active)
+		, JoinTime(static_cast<float>(FPlatformTime::Seconds()))
+	{}
+
+	bool IsValid()  const { return MemberId.IsValid(); }
+	bool IsActive() const { return Status == ENexusPartyMemberStatus::Active; }
+};
+
+/**
+ * Authoritative snapshot of the party state.
+ * Replicated from the leader's ANexusPartyBeaconHostObject to all members on every change.
+ *
+ * The leader is stored separately from Members to simplify leader-specific logic.
+ * Members array contains only non-leader players.
+ */
+USTRUCT(BlueprintType)
+struct NEXUS_API FNexusPartyState
+{
+    GENERATED_BODY()
+
+    /** Unique ID of the party leader. A valid ID means the party is active. */
+    UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+    FUniqueNetIdRepl LeaderId;
+
+    /** Display name of the party leader. */
+    UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+    FString LeaderDisplayName;
+
+    /**
+     * All non-leader party members, including recently Left/Kicked entries.
+     * Use GetActiveMembers() to filter to currently active players only.
+     */
+    UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+    TArray<FNexusPartySlot> Members;
+
+    /** Maximum number of players allowed in this party, including the leader. */
+    UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+    int32 MaxSize = 4;
+
+    FNexusPartyState() = default;
+
+    /** @return Whether this state represents an active party. */
+    FORCEINLINE bool IsValid() const { return LeaderId.IsValid() && MaxSize > 0; }
+
+    /** @return Whether the given ID belongs to the party leader. */
+   FORCEINLINE  bool IsLeader(const FUniqueNetIdRepl& Id) const
+    {
+        return LeaderId.IsValid() && Id.IsValid() && LeaderId == Id;
+    }
+
+    /** @return Whether the given ID is an ACTIVE (non-kicked/left) party member. */
+    bool IsActiveMember(const FUniqueNetIdRepl& Id) const
+    {
+        return Members.ContainsByPredicate([&Id](const FNexusPartySlot& S)
+        {
+            return S.IsActive() && S.MemberId == Id;
+        });
+    }
+
+    /** @return Number of active players (leader + active members). */
+    int32 GetActiveCount() const
+    {
+        if (!IsValid()) { return 0; }
+        int32 Count = 1; // Leader always counts
+        for (const FNexusPartySlot& S : Members)
+        {
+            if (S.IsActive()) { ++Count; }
+        }
+        return Count;
+    }
+
+    /** @return Whether the party is at maximum capacity. */
+    FORCEINLINE bool IsFull() const { return GetActiveCount() >= MaxSize; }
+
+    /** @return Only the currently active (non-kicked/left) member slots. */
+    TArray<FNexusPartySlot> GetActiveMembers() const
+    {
+        TArray<FNexusPartySlot> Active;
+        for (const FNexusPartySlot& S : Members)
+        {
+            if (S.IsActive()) { Active.Add(S); }
+        }
+        return Active;
+    }
+};
+
+/**
  * Represents a single player inside a party reservation request.
  *
  * Platform is optional and used for crossplay filtering.
@@ -1016,8 +1207,35 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusOnSessionInviteAcceptedSignatu
 /** Fired when a session is updated. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusOnSessionUpdatedSignature, const ENexusUpdateSessionResult, Result);
 
+/** Fired when the local player creates (or fails to create) a party. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusOnPartyCreatedSignature, ENexusPartyResult, PartyResult, const FNexusPartyState&, PartyState);
+
+/** Fired when the local player joins (or fails to join) a party. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusOnPartyJoinedSignature, ENexusPartyResult, PartyResult, const FNexusPartyState&, PartyState);
+
+/** Fired whenever the party state changes for any reason. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusOnPartyStateUpdatedSignature, const FNexusPartyState&, PartyState);
+
+/** Fired when a new member successfully joins the party. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusOnPartyMemberJoinedSignature, const FNexusPartySlot&, NewMember, const FNexusPartyState, UpdatedState);
+
+/** Fired when a member leaves or is kicked from the party. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusOnPartyMemberLeftSignature, const FUniqueNetIdRepl&, MemberId, ENexusPartyMemberStatus, MemberStatus);
+
+/** Fired when the party is disbanded (by leader) or the local player is kicked. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusOnPartyDisbandedSignature, ENexusPartyResult, PartyResult);
+
+/** Fired when a session is created. (c++ only) */
 DECLARE_MULTICAST_DELEGATE_OneParam(FNexusNativeOnSessionCreatedSignature, ENexusCreateSessionResult /*Result*/);
+
+/** Fired when sessions are found. (c++ only) */
 DECLARE_MULTICAST_DELEGATE_TwoParams(FNexusNativeOnSessionsFoundSignature, ENexusFindSessionsResult /*Result*/, const TArray<FNexusSearchResult>& /*Results*/);
+
+/** Fired when a session is joined. (c++ only) */
 DECLARE_MULTICAST_DELEGATE_OneParam(FNexusNativeOnSessionJoinedSignature, ENexusJoinSessionResult /*Result*/);
+
+/** Fired when a session is destroyed. (c++ only) */
 DECLARE_MULTICAST_DELEGATE_OneParam(FNexusNativeOnSessionDestroyedSignature, ENexusDestroySessionResult /*Result*/);
+
+/** Fired when the session state changes. (c++ only) */
 DECLARE_MULTICAST_DELEGATE_OneParam(FNexusNativeOnSessionUpdatedSignature, const ENexusUpdateSessionResult);

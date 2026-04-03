@@ -3,12 +3,13 @@
 #include "NexusOnlineSubsystem.h"
 #include "Managers/NexusSessionManager.h"
 #include "Managers/NexusFriendManager.h"
-#include "NexusOnlineSettings.h"
 #include "OnlineSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "NexusLog.h"
+#include "NexusOnlineSettings.h"
 #include "Engine/World.h"
 #include "Managers/NexusBeaconManager.h"
+#include "Managers/NexusPartyManager.h"
 #include "Managers/NexusReservationManager.h"
 
 UNexusOnlineSubsystem::UNexusOnlineSubsystem()
@@ -24,53 +25,66 @@ void UNexusOnlineSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	UGameInstance* GameInstance = GetGameInstance();
 	check(GameInstance);
+	
+	const UNexusOnlineSettings* OnlineSettings = UNexusOnlineSettings::Get();
+	if (IsValid(OnlineSettings))
+	{
+		// Create and initialize managers. They are owned by this subsystem (Outer = this).
+		SessionManager = NewObject<UNexusSessionManager>(this, !OnlineSettings->SessionManagerClass.IsNull() ? OnlineSettings->SessionManagerClass.LoadSynchronous() : UNexusSessionManager::StaticClass());
+		SessionManager->Initialize(GameInstance);
 
-	// Create and initialize managers. They are owned by this subsystem (Outer = this).
-	SessionManager = NewObject<UNexusSessionManager>(this);
-	SessionManager->Initialize(GameInstance);
+		FriendManager = NewObject<UNexusFriendManager>(this, !OnlineSettings->FriendManagerClass.IsNull() ? OnlineSettings->FriendManagerClass.LoadSynchronous() : UNexusFriendManager::StaticClass());
+		FriendManager->Initialize(GameInstance);
 
-	FriendManager = NewObject<UNexusFriendManager>(this);
-	FriendManager->Initialize(GameInstance);
+		BeaconManager = NewObject<UNexusBeaconManager>(this, !OnlineSettings->BeaconManagerClass.IsNull() ? OnlineSettings->BeaconManagerClass.LoadSynchronous() : UNexusBeaconManager::StaticClass());
+		BeaconManager->Initialize(GameInstance);
 
-	BeaconManager = NewObject<UNexusBeaconManager>(this);
-	BeaconManager->Initialize(GameInstance);
+		SessionManager->NativeOnSessionCreated.AddUObject(BeaconManager, &UNexusBeaconManager::OnSessionCreated);
+		SessionManager->NativeOnSessionDestroyed.AddUObject(BeaconManager, &UNexusBeaconManager::OnSessionDestroyed);
+	
+		PartyManager = NewObject<UNexusPartyManager>(this, !OnlineSettings->PartyManagerClass.IsNull() ? OnlineSettings->PartyManagerClass.LoadSynchronous() : UNexusPartyManager::StaticClass());
+		PartyManager->Initialize(GameInstance, BeaconManager);
 
-	SessionManager->NativeOnSessionCreated.AddUObject(BeaconManager, &UNexusBeaconManager::OnSessionCreated);
-	SessionManager->NativeOnSessionDestroyed.AddUObject(BeaconManager, &UNexusBeaconManager::OnSessionDestroyed);
+		ReservationManager = NewObject<UNexusReservationManager>(this, !OnlineSettings->ReservationManagerClass.IsNull() ? OnlineSettings->ReservationManagerClass.LoadSynchronous() : UNexusReservationManager::StaticClass());
+		ReservationManager->Initialize(GameInstance);
 
-	ReservationManager = NewObject<UNexusReservationManager>(this);
-	ReservationManager->Initialize(GameInstance);
-
-	SessionManager->NativeOnSessionCreated.AddUObject(ReservationManager, &UNexusReservationManager::OnSessionCreated);
-	SessionManager->NativeOnSessionDestroyed.AddUObject(ReservationManager, &UNexusReservationManager::OnSessionDestroyed);
+		SessionManager->NativeOnSessionCreated.AddUObject(ReservationManager, &UNexusReservationManager::OnSessionCreated);
+		SessionManager->NativeOnSessionDestroyed.AddUObject(ReservationManager, &UNexusReservationManager::OnSessionDestroyed);
+	}
 
 	NEXUS_LOG(LogNexus, Log, TEXT("Initialized. Online subsystem: %s"), *GetOnlineSubsystemName());
 }
 
 void UNexusOnlineSubsystem::Deinitialize()
 {
-	if (SessionManager)
+	if (IsValid(SessionManager))
 	{
 		SessionManager->Deinitialize();
 		SessionManager = nullptr;
 	}
 
-	if (FriendManager)
+	if (IsValid(FriendManager))
 	{
 		FriendManager->Deinitialize();
 		FriendManager = nullptr;
 	}
-
-	if (BeaconManager)
+	
+	if (IsValid(PartyManager))
 	{
-		BeaconManager->Deinitialize();
-		BeaconManager = nullptr;
+		PartyManager->Deinitialize();
+		PartyManager = nullptr;
 	}
 
-	if (ReservationManager)
+	if (IsValid(ReservationManager))
 	{
 		ReservationManager->Deinitialize();
 		ReservationManager = nullptr;
+	}
+
+	if (IsValid(BeaconManager))
+	{
+		BeaconManager->Deinitialize();
+		BeaconManager = nullptr;
 	}
 
 	NEXUS_LOG(LogNexus, Log, TEXT("Deinitialized."));

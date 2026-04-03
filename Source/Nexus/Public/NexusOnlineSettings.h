@@ -6,7 +6,12 @@
 #include "Engine/DeveloperSettings.h"
 #include "NexusOnlineSettings.generated.h"
 
-class ANexusPingBeaconHostObject;
+class UNexusSessionManager;
+class UNexusReservationManager;
+class UNexusBeaconManager;
+class UNexusPartyManager;
+class UNexusFriendManager;
+class ANexusPingBeaconHost;
 class ANexusPingBeaconClient;
 
 /**
@@ -23,12 +28,12 @@ class NEXUS_API UNexusOnlineSettings : public UDeveloperSettings
 public:
 	UNexusOnlineSettings(const FObjectInitializer& ObjectInitializer);
 
-	static const UNexusOnlineSettings* Get()
-	{
-		return GetDefault<UNexusOnlineSettings>();
-	}
+	static const UNexusOnlineSettings* Get() { return GetDefault<UNexusOnlineSettings>(); }
 
 public:
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Session", meta = (AllowedClasses = "/Script/Nexus.NexusSessionManager"))
+	TSoftClassPtr<UNexusSessionManager> SessionManagerClass;
+	
 	/**
 	 * The default session name used for game sessions.
 	 * In most cases this should remain as NAME_GameSession.
@@ -72,13 +77,47 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Search", meta = (ClampMin = "1", ClampMax = "100"))
 	int32 DefaultMaxSearchResults;
 
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Friends", meta = (AllowedClasses = "/Script/Nexus.NexusFriendManager"))
+	TSoftClassPtr<UNexusFriendManager> FriendManagerClass;
+	
 	/**
 	 * Whether to automatically read the friends list when the Nexus subsystem initializes.
 	 * Disable this if you want to control when the friends list is first loaded.
 	 */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Friends")
 	bool bAutoReadFriendsList;
+	
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Party", meta = (AllowedClasses = "/Script/Nexus.NexusPartyManager"))
+	TSoftClassPtr<UNexusPartyManager> PartyManagerClass;
+	
+	/**
+	 * Default maximum party size (including the leader).
+	 * Used by CreateParty() when no explicit size is provided.
+	 */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Party", meta = (ClampMin = "2", ClampMax = "8"))
+	int32 DefaultPartyMaxSize;
+	
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Reservations", meta = (AllowedClasses = "/Script/Nexus.NexusReservationManager"))
+	TSoftClassPtr<UNexusReservationManager> ReservationManagerClass;
+	
+	/**
+	 * When true, the reservation host starts automatically when a session is created,
+	 * using DefaultMaxPlayers as capacity.
+	 * Set to false to call StartReservationHost() manually with custom team configuration.
+	 */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Reservations")
+	uint8 bAutoStartReservationHost:1;
 
+	/**
+	 * Port the reservation host listens on. Must differ from BeaconListenPort.
+	 * Default: 15001.
+	 */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Reservations", meta = (ClampMin = "1024", ClampMax = "65535"))
+	int32 ReservationListenPort;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Beacon", meta = (AllowedClasses = "/Script/Nexus.NexusBeaconManager"))
+	TSoftClassPtr<UNexusBeaconManager> BeaconManagerClass;
+	
 	/**
 	 * When true, the beacon host starts automatically when a game session is created,
 	 * and stops when the session is destroyed.
@@ -95,25 +134,10 @@ public:
 	int32 BeaconListenPort;
 
 	/** A Ping Host Object class is instantiated on the server */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Beacons|Ping", meta = (AllowedClasses = "/Script/Nexus.NexusPingBeaconHostObject"))
-	TSoftClassPtr<ANexusPingBeaconHostObject> PingHostObjectClass;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Beacons|Ping", meta = (AllowedClasses = "/Script/Nexus.NexusPingBeaconHost"))
+	TSoftClassPtr<ANexusPingBeaconHost> PingHostClass;
 
 	/** The Ping Client class that players will instantiate. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Beacons|Ping", meta = (AllowedClasses = "/Script/Nexus.NexusPingBeaconClient"))
 	TSoftClassPtr<ANexusPingBeaconClient> PingClientClass;
-
-	/**
-	 * When true, the reservation host starts automatically when a session is created,
-	 * using DefaultMaxPlayers as capacity.
-	 * Set to false to call StartReservationHost() manually with custom team configuration.
-	 */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Beacons|Reservations")
-	uint8 bAutoStartReservationHost:1;
-
-	/**
-	 * Port the reservation host listens on. Must differ from BeaconListenPort.
-	 * Default: 15001.
-	 */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Beacons|Reservations", meta = (ClampMin = "1024", ClampMax = "65535"))
-	int32 ReservationListenPort;
 };

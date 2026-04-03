@@ -1,17 +1,18 @@
 #include "Managers/NexusBeaconManager.h"
 #include "Beacons/NexusPingBeaconClient.h"
-#include "Beacons/NexusPingBeaconHostObject.h"
+#include "Beacons/NexusPingBeaconHost.h"
 #include "NexusOnlineSettings.h"
 #include "NexusOnlineTypes.h"
 #include "NexusLog.h"
 #include "OnlineBeaconHost.h"
+#include "Beacons/NexusPartyBeaconHost.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 
 UNexusBeaconManager::UNexusBeaconManager(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, BeaconHost(nullptr)
-	, PingHostObject(nullptr)
+	, PingHost(nullptr)
 	, bBeaconHostActive(false)
 {
 
@@ -101,16 +102,24 @@ void UNexusBeaconManager::StopBeaconHost()
 		return;
 	}
 
-	if (IsValid(PingHostObject))
+	if (IsValid(PingHost))
 	{
-		PingHostObject->Destroy();
-		PingHostObject = nullptr;
+		PingHost->Destroy();
+		PingHost = nullptr;
 	}
 
 	if (IsValid(BeaconHost))
 	{
 		BeaconHost->Destroy();
 		BeaconHost = nullptr;
+	}
+	
+	if (IsValid(PartyHost))
+	{
+		// DisbandParty is handled by UNexusPartyManager::Deinitialize before this is called.
+		// Destroy the actor unconditionally.
+		PartyHost->Destroy();
+		PartyHost = nullptr;
 	}
 
 	bBeaconHostActive = false;
@@ -201,7 +210,7 @@ bool UNexusBeaconManager::RegisterAllHostObjects()
 {
 	// Add future host object registrations here in order:
 	// return RegisterPingHostObject() && RegisterLobbyHostObject() && ...
-	return RegisterPingHostObject();
+	return RegisterPingHostObject() && RegisterPartyHostObject();
 }
 
 bool UNexusBeaconManager::RegisterPingHostObject()
@@ -212,18 +221,39 @@ bool UNexusBeaconManager::RegisterPingHostObject()
 		return false;
 	}
 
-	const TSubclassOf<ANexusPingBeaconHostObject> HostObjClass = ResolvePingHostObjectClass();
-	PingHostObject = World->SpawnActor<ANexusPingBeaconHostObject>(HostObjClass);
-	if (!PingHostObject)
+	const TSubclassOf<ANexusPingBeaconHost> HostObjClass = ResolvePingHostObjectClass();
+	PingHost = World->SpawnActor<ANexusPingBeaconHost>(HostObjClass);
+	if (!PingHost)
 	{
 		NEXUS_LOG(LogNexus, Error, TEXT("Failed to spawn HostObject."));
 		return false;
 	}
 
 	const TSubclassOf<ANexusPingBeaconClient> ClientClass = ResolvePingClientClass();
-	BeaconHost->RegisterHost(PingHostObject);
+	BeaconHost->RegisterHost(PingHost);
 
-	NEXUS_LOG(LogNexus, Log, TEXT("Registered (BeaconType='%s')."), *PingHostObject->GetBeaconType());
+	NEXUS_LOG(LogNexus, Log, TEXT("Registered (BeaconType='%s')."), *PingHost->GetBeaconType());
+	return true;
+}
+
+bool UNexusBeaconManager::RegisterPartyHostObject()
+{
+	UWorld* World = GetWorld();
+	if (!World || !IsValid(BeaconHost))
+	{
+		return false;
+	}
+
+	PartyHost = World->SpawnActor<ANexusPartyBeaconHost>();
+	if (!IsValid(PartyHost))
+	{
+		NEXUS_LOG(LogNexus, Error, TEXT("Failed to spawn ANexusPartyBeaconHost."));
+		return false;
+	}
+
+	BeaconHost->RegisterHost(PartyHost);
+
+	NEXUS_LOG(LogNexus, Log, TEXT("Registered ANexusPartyBeaconHost (BeaconType='%s')."), *PartyHost->GetBeaconType());
 	return true;
 }
 
@@ -244,19 +274,19 @@ TSubclassOf<ANexusPingBeaconClient> UNexusBeaconManager::ResolvePingClientClass(
 	return ANexusPingBeaconClient::StaticClass();
 }
 
-TSubclassOf<ANexusPingBeaconHostObject> UNexusBeaconManager::ResolvePingHostObjectClass() const
+TSubclassOf<ANexusPingBeaconHost> UNexusBeaconManager::ResolvePingHostObjectClass() const
 {
 	const UNexusOnlineSettings* Settings = UNexusOnlineSettings::Get();
-	if (!Settings->PingHostObjectClass.IsNull())
+	if (!Settings->PingHostClass.IsNull())
 	{
-		if (UClass* Loaded = Settings->PingHostObjectClass.LoadSynchronous())
+		if (UClass* Loaded = Settings->PingHostClass.LoadSynchronous())
 		{
-			if (Loaded->IsChildOf(ANexusPingBeaconHostObject::StaticClass()))
+			if (Loaded->IsChildOf(ANexusPingBeaconHost::StaticClass()))
 			{
 				return Loaded;
 			}
 			NEXUS_LOG(LogNexus, Warning, TEXT("PingHostObjectClass is not a child of ANexusPingBeaconHostObject. Using default."));
 		}
 	}
-	return ANexusPingBeaconHostObject::StaticClass();
+	return ANexusPingBeaconHost::StaticClass();
 }

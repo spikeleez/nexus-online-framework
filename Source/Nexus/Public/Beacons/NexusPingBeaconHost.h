@@ -2,15 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "OnlineBeaconHostObject.h"
-#include "NexusPingBeaconHostObject.generated.h"
+#include "NexusPingBeaconHost.generated.h"
 
 UCLASS(Blueprintable)
-class NEXUS_API ANexusPingBeaconHostObject : public AOnlineBeaconHostObject
+class NEXUS_API ANexusPingBeaconHost : public AOnlineBeaconHostObject
 {
 	GENERATED_BODY()
 
 public:
-	ANexusPingBeaconHostObject();
+	ANexusPingBeaconHost();
 
 	//~Begin AActor interface
 	virtual void BeginPlay() override;

@@ -7,6 +7,7 @@
 #include "NexusOnlineTypes.h"
 #include "NexusOnlineLibrary.generated.h"
 
+class UNexusPartyManager;
 class UNexusOnlineSubsystem;
 class UNexusSessionManager;
 class UNexusFriendManager;
@@ -172,4 +173,7 @@ public:
 
 	UFUNCTION(Category = "Nexus|Reservation", BlueprintCallable, meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
 	static UNexusReservationManager* GetReservationManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
+
+	UFUNCTION(Category = "Nexus|Party", BlueprintCallable, meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
+	static UNexusPartyManager* GetPartyManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
 };

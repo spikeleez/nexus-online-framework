@@ -5,8 +5,9 @@
 #include "NexusBeaconManager.generated.h"
 
 class AOnlineBeaconHost;
-class ANexusPingBeaconHostObject;
+class ANexusPingBeaconHost;
 class ANexusPingBeaconClient;
+class ANexusPartyBeaconHost;
 class UGameInstance;
 
 /**
@@ -58,6 +59,14 @@ public:
 
 	/** Bound to SessionManager::NativeOnSessionDestroyed. Stops the host automatically. */
 	virtual void OnSessionDestroyed(ENexusDestroySessionResult Result);
+	
+	/** @return The party beacon host object. Valid after StartBeaconHost(). */
+	UFUNCTION(BlueprintPure, Category = "Nexus|Beacon|Getters")
+	FORCEINLINE ANexusPartyBeaconHost* GetPartyHost() const { return PartyHost; }
+	
+	/** @return The ping beacon host object. */
+	UFUNCTION(BlueprintPure, Category = "Nexus|Beacon|Getters")
+	FORCEINLINE ANexusPingBeaconHost* GetPingHost() const { return PingHost; }
 
 private:
 	/** Spawns and registers all configured HostObjects. Add new types here. */
@@ -65,12 +74,15 @@ private:
 
 	/** Spawns and registers the ping HostObject. */
 	bool RegisterPingHostObject();
+	
+	/** Spawns and registers the party host object. */
+	bool RegisterPartyHostObject();
 
 	/** Resolves PingClientClass from settings with fallback to ANexusPingBeaconClient. */
 	TSubclassOf<ANexusPingBeaconClient> ResolvePingClientClass() const;
 
 	/** Resolves PingHostObjectClass from settings with fallback to ANexusPingBeaconHostObject. */
-	TSubclassOf<ANexusPingBeaconHostObject> ResolvePingHostObjectClass() const;
+	TSubclassOf<ANexusPingBeaconHost> ResolvePingHostObjectClass() const;
 
 private:
 	/** The single beacon host. All HostObjects are registered here. */
@@ -79,7 +91,11 @@ private:
 
 	/** Handles incoming ping beacon connections. */
 	UPROPERTY()
-	TObjectPtr<ANexusPingBeaconHostObject> PingHostObject;
+	TObjectPtr<ANexusPingBeaconHost> PingHost;
+	
+	/** Handles incoming party beacon connections. */
+	UPROPERTY()
+	TObjectPtr<ANexusPartyBeaconHost> PartyHost;
 
 	TWeakObjectPtr<UGameInstance> CachedGameInstance;
 

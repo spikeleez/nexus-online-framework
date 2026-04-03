@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "NexusOnlineTypes.h"
-#include "OnlineBeaconReservation.h"
 #include "NexusReservationManager.generated.h"
 
 class APartyBeaconHost;

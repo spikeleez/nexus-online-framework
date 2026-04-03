@@ -7,6 +7,7 @@
 #include "NexusOnlineTypes.h"
 #include "NexusOnlineSubsystem.generated.h"
 
+class UNexusPartyManager;
 class UNexusSessionManager;
 class UNexusFriendManager;
 class UNexusBeaconManager;
@@ -44,6 +45,9 @@ public:
 
 	/** @return The beacon manager responsible for all Online Beacon lifecycle. */
 	UNexusReservationManager* GetReservationManager() const { return ReservationManager; }
+	
+	/** @return The party manager responsible for party creation and membership. */
+	UNexusPartyManager* GetPartyManager() const { return PartyManager; }
 
 	/**
 	 * Get the Nexus subsystem from any world context object.
@@ -73,4 +77,8 @@ protected:
 	/** Reservation management instance. Created during Initialize. */
 	UPROPERTY()
 	TObjectPtr<UNexusReservationManager> ReservationManager;
+
+	/** Party management instance. Created during Initialize. */
+	UPROPERTY()
+	TObjectPtr<UNexusPartyManager> PartyManager;
 };

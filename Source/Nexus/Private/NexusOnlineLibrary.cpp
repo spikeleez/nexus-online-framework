@@ -8,6 +8,7 @@
 #include "Managers/NexusBeaconManager.h"
 #include "Managers/NexusReservationManager.h"
 #include "OnlineSubsystem.h"
+#include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
@@ -78,14 +79,14 @@ FUniqueNetIdRepl UNexusOnlineLibrary::GetLocalPlayerUniqueId(const UObject* Worl
 		return FUniqueNetIdRepl();
 	}
 
-	UGameInstance* GameInstance = World->GetGameInstance();
+	const UGameInstance* GameInstance = World->GetGameInstance();
 	if (!GameInstance)
 	{
 		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
 		return FUniqueNetIdRepl();
 	}
 
-	ULocalPlayer* LocalPlayer = GameInstance->GetFirstGamePlayer();
+	const ULocalPlayer* LocalPlayer = GameInstance->GetFirstGamePlayer();
 	if (!LocalPlayer)
 	{
 		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
@@ -98,14 +99,14 @@ FUniqueNetIdRepl UNexusOnlineLibrary::GetLocalPlayerUniqueId(const UObject* Worl
 
 FString UNexusOnlineLibrary::GetLocalPlayerDisplayName(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
-	IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get();
-	if (!OnlineSub)
+	const IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(WorldContextObject->GetWorld());
+	if (!OnlineSubsystem)
 	{
 		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
 		return FString();
 	}
 
-	IOnlineIdentityPtr Identity = OnlineSub->GetIdentityInterface();
+	const IOnlineIdentityPtr Identity = OnlineSubsystem->GetIdentityInterface();
 	if (!Identity.IsValid())
 	{
 		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
@@ -118,7 +119,7 @@ FString UNexusOnlineLibrary::GetLocalPlayerDisplayName(const UObject* WorldConte
 
 UNexusBeaconManager* UNexusOnlineLibrary::GetBeaconManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
-	UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
+	const UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
 	if (!Subsystem)
 	{
 		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
@@ -138,7 +139,7 @@ UNexusBeaconManager* UNexusOnlineLibrary::GetBeaconManager(const UObject* WorldC
 
 UNexusReservationManager* UNexusOnlineLibrary::GetReservationManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
-	UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
+	const UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
 	if (!Subsystem)
 	{
 		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
@@ -154,6 +155,26 @@ UNexusReservationManager* UNexusOnlineLibrary::GetReservationManager(const UObje
 
 	OutResult = ENexusBlueprintLibraryOutputResult::IsValid;
 	return ReservationManager;
+}
+
+UNexusPartyManager* UNexusOnlineLibrary::GetPartyManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
+{
+	const UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
+	if (!Subsystem)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return nullptr;
+	}
+
+	UNexusPartyManager* PartyManager = Subsystem->GetPartyManager();
+	if (!PartyManager)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return nullptr;
+	}
+
+	OutResult = ENexusBlueprintLibraryOutputResult::IsValid;
+	return PartyManager;
 }
 
 FNexuHostParams UNexusOnlineLibrary::MakeDefaultHostParams()
@@ -329,7 +350,7 @@ void UNexusOnlineLibrary::ClientTravelToSession(const UObject* WorldContextObjec
 {
 	if (!WorldContextObject) return;
 
-	UWorld* World = WorldContextObject->GetWorld();
+	const UWorld* World = WorldContextObject->GetWorld();
 	if (!World) return;
 
 	APlayerController* PlayerController = World->GetFirstPlayerController();
