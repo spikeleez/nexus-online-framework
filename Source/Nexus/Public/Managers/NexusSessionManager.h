@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
 #include "NexusOnlineTypes.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "NexusSessionManager.generated.h"

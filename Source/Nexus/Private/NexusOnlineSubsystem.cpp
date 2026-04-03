@@ -12,6 +12,8 @@
 #include "Managers/NexusPartyManager.h"
 #include "Managers/NexusReservationManager.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusOnlineSubsystem)
+
 UNexusOnlineSubsystem::UNexusOnlineSubsystem()
 	: SessionManager(nullptr)
 	, FriendManager(nullptr)

@@ -9,6 +9,8 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusBeaconManager)
+
 UNexusBeaconManager::UNexusBeaconManager(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, BeaconHost(nullptr)
@@ -257,7 +259,7 @@ bool UNexusBeaconManager::RegisterPartyHostObject()
 	return true;
 }
 
-TSubclassOf<ANexusPingBeaconClient> UNexusBeaconManager::ResolvePingClientClass() const
+TSubclassOf<ANexusPingBeaconClient> UNexusBeaconManager::ResolvePingClientClass()
 {
 	const UNexusOnlineSettings* Settings = UNexusOnlineSettings::Get();
 	if (!Settings->PingClientClass.IsNull())
@@ -274,7 +276,7 @@ TSubclassOf<ANexusPingBeaconClient> UNexusBeaconManager::ResolvePingClientClass(
 	return ANexusPingBeaconClient::StaticClass();
 }
 
-TSubclassOf<ANexusPingBeaconHost> UNexusBeaconManager::ResolvePingHostObjectClass() const
+TSubclassOf<ANexusPingBeaconHost> UNexusBeaconManager::ResolvePingHostObjectClass()
 {
 	const UNexusOnlineSettings* Settings = UNexusOnlineSettings::Get();
 	if (!Settings->PingHostClass.IsNull())

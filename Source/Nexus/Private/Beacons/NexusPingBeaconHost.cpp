@@ -2,6 +2,8 @@
 #include "Beacons/NexusPingBeaconClient.h"
 #include "NexusOnlineSettings.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusPingBeaconHost)
+
 ANexusPingBeaconHost::ANexusPingBeaconHost()
 {
 	BeaconTypeName = ANexusPingBeaconClient::StaticClass()->GetName();

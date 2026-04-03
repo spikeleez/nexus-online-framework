@@ -100,6 +100,10 @@ public:
 	UFUNCTION(Category = "Nexus|Session", BlueprintPure, meta = (ScriptMethod))
 	static int32 GetNamedSessionPlayerCount(const FNexusNamedSession& NamedSession);
 
+	/** @return Player count from a named session. */
+	UFUNCTION(Category = "Nexus|Session", BlueprintPure, meta = (ScriptMethod))
+	static FString GetSessionId(const FNexusSearchResult& SearchResult);
+
 	UFUNCTION(Category = "Nexus|Session", BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
 	static void ClientTravelToSession(const UObject* WorldContextObject, const FString& ConnectString);
 
@@ -169,11 +173,11 @@ public:
 
 	/** Get the beacon manager from any world context. */
 	UFUNCTION(Category = "Nexus|Beacons", BlueprintCallable, meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
-	static UNexusBeaconManager* GetBeaconManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
+	static UNexusBeaconManager* GetNexusBeaconManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
 
 	UFUNCTION(Category = "Nexus|Reservation", BlueprintCallable, meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
-	static UNexusReservationManager* GetReservationManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
+	static UNexusReservationManager* GetNexusReservationManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
 
 	UFUNCTION(Category = "Nexus|Party", BlueprintCallable, meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
-	static UNexusPartyManager* GetPartyManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
+	static UNexusPartyManager* GetNexusPartyManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
 };

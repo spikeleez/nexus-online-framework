@@ -7,6 +7,8 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusReservationManager)
+
 UNexusReservationManager::UNexusReservationManager(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, ReservationHost(nullptr)

@@ -3,6 +3,8 @@
 #include "Beacons/NexusPartyBeaconHost.h"
 #include "Beacons/NexusPartyBeaconClient.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusPartyBeaconHost)
+
 ANexusPartyBeaconHost::ANexusPartyBeaconHost(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -29,7 +31,7 @@ void ANexusPartyBeaconHost::OnClientConnected(AOnlineBeaconClient* NewClientActo
 
 void ANexusPartyBeaconHost::NotifyClientDisconnected(AOnlineBeaconClient* LeavingClientActor)
 {
-	ANexusPartyBeaconClient* PartyClient = Cast<ANexusPartyBeaconClient>(LeavingClientActor);
+	const ANexusPartyBeaconClient* PartyClient = Cast<ANexusPartyBeaconClient>(LeavingClientActor);
 	if (!IsValid(PartyClient))
 	{
 		Super::NotifyClientDisconnected(LeavingClientActor);

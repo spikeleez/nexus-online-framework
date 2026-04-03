@@ -14,9 +14,11 @@
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusOnlineLibrary)
+
 UNexusSessionManager* UNexusOnlineLibrary::GetNexusSessionManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
-	UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
+	const UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
 	if (!Subsystem)
 	{
 		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
@@ -36,7 +38,7 @@ UNexusSessionManager* UNexusOnlineLibrary::GetNexusSessionManager(const UObject*
 
 UNexusFriendManager* UNexusOnlineLibrary::GetNexusFriendManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
-	UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
+	const UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
 	if (!Subsystem)
 	{
 		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
@@ -117,7 +119,7 @@ FString UNexusOnlineLibrary::GetLocalPlayerDisplayName(const UObject* WorldConte
 	return Identity->GetPlayerNickname(0);
 }
 
-UNexusBeaconManager* UNexusOnlineLibrary::GetBeaconManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
+UNexusBeaconManager* UNexusOnlineLibrary::GetNexusBeaconManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
 	const UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
 	if (!Subsystem)
@@ -137,7 +139,7 @@ UNexusBeaconManager* UNexusOnlineLibrary::GetBeaconManager(const UObject* WorldC
 	return BeaconManager;
 }
 
-UNexusReservationManager* UNexusOnlineLibrary::GetReservationManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
+UNexusReservationManager* UNexusOnlineLibrary::GetNexusReservationManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
 	const UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
 	if (!Subsystem)
@@ -157,7 +159,7 @@ UNexusReservationManager* UNexusOnlineLibrary::GetReservationManager(const UObje
 	return ReservationManager;
 }
 
-UNexusPartyManager* UNexusOnlineLibrary::GetPartyManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
+UNexusPartyManager* UNexusOnlineLibrary::GetNexusPartyManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
 {
 	const UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
 	if (!Subsystem)
@@ -329,6 +331,11 @@ FNexusSessionSettings UNexusOnlineLibrary::GetNamedSessionSettings(const FNexusN
 int32 UNexusOnlineLibrary::GetNamedSessionPlayerCount(const FNexusNamedSession& NamedSession)
 {
 	return NamedSession.GetNumPlayers();
+}
+
+FString UNexusOnlineLibrary::GetSessionId(const FNexusSearchResult& SearchResult)
+{
+	return SearchResult.GetNativeSearchResult().GetSessionIdStr();
 }
 
 bool UNexusOnlineLibrary::GetCustomSettingInt32(const FNexusSessionSettings& Settings, FName Key, int32& Value)

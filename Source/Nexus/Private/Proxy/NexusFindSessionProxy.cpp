@@ -5,6 +5,8 @@
 #include "Managers/NexusSessionManager.h"
 #include "NexusLog.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusFindSessionProxy)
+
 UNexusFindSessionProxy* UNexusFindSessionProxy::FindNexusSessions(UObject* InWorldContextObject, const FNexusSearchParams& InSearchParams)
 {
 	UNexusFindSessionProxy* Proxy = NewObject<UNexusFindSessionProxy>();

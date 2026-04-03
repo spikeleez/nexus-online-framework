@@ -7,6 +7,8 @@
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusFriendManager)
+
 UNexusFriendManager::UNexusFriendManager()
 	: bInviteHandlersRegistered(false)
 {

@@ -12,6 +12,8 @@ THIRD_PARTY_INCLUDES_START
 THIRD_PARTY_INCLUDES_END
 #endif
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusSteamLibrary)
+
 UTexture2D* UNexusSteamLibrary::GetLocalPlayerSteamAvatar(ENexusBlueprintLibraryOutputResult& OutResult)
 {
 #if NEXUS_WITH_STEAM

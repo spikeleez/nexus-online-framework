@@ -4,6 +4,8 @@
 #include "Beacons/NexusPartyBeaconHost.h"
 #include "NexusOnlineSettings.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusPartyBeaconClient)
+
 ANexusPartyBeaconClient::ANexusPartyBeaconClient(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -34,8 +36,7 @@ bool ANexusPartyBeaconClient::ConnectToHost(const FString& HostAddress, int32 Po
 
 	if (!LocalPlayerId.IsValid())
 	{
-		NEXUS_LOG(LogNexus, Error,
-			TEXT("[PartyClient] ConnectToHost: LocalPlayerId not set. Call SetLocalPlayerId first."));
+		NEXUS_LOG(LogNexus, Error, TEXT("[PartyClient] ConnectToHost: LocalPlayerId not set. Call SetLocalPlayerId first."));
 		return false;
 	}
 
@@ -70,7 +71,7 @@ void ANexusPartyBeaconClient::ServerRequestJoin_Implementation(const FUniqueNetI
 	ANexusPartyBeaconHost* PartyBeaconHost = Cast<ANexusPartyBeaconHost>(GetBeaconOwner());
 	if (!IsValid(PartyBeaconHost))
 	{
-		NEXUS_LOG(LogNexus, Error, TEXT("[PartyClient][Server] ServerRequestJoin: could not get ANexusPartyBeaconHostObject."));
+		NEXUS_LOG(LogNexus, Error, TEXT("[PartyClient] [Server] ServerRequestJoin: could not get ANexusPartyBeaconHostObject."));
 		ClientReceiveJoinResult(ENexusPartyResult::InvalidState, FNexusPartyState());
 		return;
 	}

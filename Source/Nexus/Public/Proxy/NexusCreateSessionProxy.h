@@ -38,10 +38,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Nexus|Session", DisplayName = "Create Nexus Session", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", AdvancedDisplay = "SessionName", Keywords = "Create"))
 	static UNexusCreateSessionProxy* CreateNexusSession(UObject* WorldContextObject, const FNexuHostParams& HostParams, FName SessionName = NAME_None);
 
-	//~ Begin UOnlineBlueprintCallProxyBase Interface
+	//~ Begin UOnlineBlueprintCallProxyBase interface
 	virtual void Activate() override;
 	virtual void BeginDestroy() override;
-	//~ End UOnlineBlueprintCallProxyBase Interface
+	//~ End UOnlineBlueprintCallProxyBase interface
 
 private:
 	UFUNCTION()

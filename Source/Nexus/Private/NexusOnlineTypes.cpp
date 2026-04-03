@@ -4,6 +4,8 @@
 #include "Interfaces/OnlinePresenceInterface.h"
 #include "PartyBeaconState.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusOnlineTypes)
+
 FNexuSessionSetting::FNexuSessionSetting()
 	: Key(NAME_None)
 	, Data(FVariantData())
@@ -206,7 +208,7 @@ bool FNexusSearchParams::IsValid(const bool bLogErrors /*= true*/) const
 FNexusSearchResult::FNexusSearchResult()
 	: OnlineResult(FOnlineSessionSearchResult())
 {
-
+	
 }
 
 FNexusSearchResult::FNexusSearchResult(const FOnlineSessionSearchResult& InResult)

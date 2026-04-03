@@ -4,6 +4,8 @@
 #include "NexusLog.h"
 #include "Engine/World.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusUpdateSessionProxy)
+
 UNexusUpdateSessionProxy* UNexusUpdateSessionProxy::UpdateNexusSession(UObject* WorldContextObject, FNexuHostParams NewHostParams, FName SessionName)
 {
 	UNexusUpdateSessionProxy* Proxy = NewObject<UNexusUpdateSessionProxy>();

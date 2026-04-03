@@ -115,7 +115,7 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Reservations", meta = (ClampMin = "1024", ClampMax = "65535"))
 	int32 ReservationListenPort;
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Beacon", meta = (AllowedClasses = "/Script/Nexus.NexusBeaconManager"))
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Beacons", meta = (AllowedClasses = "/Script/Nexus.NexusBeaconManager"))
 	TSoftClassPtr<UNexusBeaconManager> BeaconManagerClass;
 	
 	/**

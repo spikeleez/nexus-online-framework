@@ -11,6 +11,8 @@
 #include "Engine/World.h"
 #include "Engine/Engine.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusSessionManager)
+
 UNexusSessionManager::UNexusSessionManager()
 	: CurrentSessionState(ENexusSessionState::NoSession)
 	, ActiveSessionName(NAME_None)

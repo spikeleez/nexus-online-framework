@@ -9,6 +9,8 @@
 #include "Managers/NexusReservationManager.h"
 #include "Managers/NexusSessionManager.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusOnlineSettings)
+
 UNexusOnlineSettings::UNexusOnlineSettings(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {

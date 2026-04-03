@@ -67,10 +67,12 @@ public:
 	/** @return The ping beacon host object. */
 	UFUNCTION(BlueprintPure, Category = "Nexus|Beacon|Getters")
 	FORCEINLINE ANexusPingBeaconHost* GetPingHost() const { return PingHost; }
+	
+protected:
+	/** Spawns and registers all configured HostObjects. Add new types here. */
+	virtual bool RegisterAllHostObjects();
 
 private:
-	/** Spawns and registers all configured HostObjects. Add new types here. */
-	bool RegisterAllHostObjects();
 
 	/** Spawns and registers the ping HostObject. */
 	bool RegisterPingHostObject();
@@ -79,10 +81,10 @@ private:
 	bool RegisterPartyHostObject();
 
 	/** Resolves PingClientClass from settings with fallback to ANexusPingBeaconClient. */
-	TSubclassOf<ANexusPingBeaconClient> ResolvePingClientClass() const;
+	static TSubclassOf<ANexusPingBeaconClient> ResolvePingClientClass();
 
 	/** Resolves PingHostObjectClass from settings with fallback to ANexusPingBeaconHostObject. */
-	TSubclassOf<ANexusPingBeaconHost> ResolvePingHostObjectClass() const;
+	static TSubclassOf<ANexusPingBeaconHost> ResolvePingHostObjectClass();
 
 private:
 	/** The single beacon host. All HostObjects are registered here. */

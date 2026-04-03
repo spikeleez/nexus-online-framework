@@ -6,6 +6,8 @@
 #include "NexusOnlineSettings.h"
 #include "NexusLog.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusDestroySessionProxy)
+
 UNexusDestroySessionProxy* UNexusDestroySessionProxy::DestroyNexusSession(UObject* InWorldContextObject, FName InSessionName /*= NAME_None*/)
 {
 	UNexusDestroySessionProxy* Proxy = NewObject<UNexusDestroySessionProxy>();

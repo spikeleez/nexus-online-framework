@@ -3,6 +3,8 @@
 #include "NexusLog.h"
 #include "Managers/NexusReservationManager.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusRequestReservationProxy)
+
 UNexusRequestReservationProxy* UNexusRequestReservationProxy::RequestNexusReservation(UObject* WorldContextObject, const FNexusSearchResult& SearchResult, const FNexusPartyReservation& Reservation)
 {
 	UNexusRequestReservationProxy* Proxy = NewObject<UNexusRequestReservationProxy>();

@@ -6,6 +6,8 @@
 #include "NexusOnlineSettings.h"
 #include "NexusLog.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusCreateSessionProxy)
+
 UNexusCreateSessionProxy* UNexusCreateSessionProxy::CreateNexusSession(UObject* InWorldContextObject, const FNexuHostParams& InHostParams, FName InSessionName /*= NAME_None*/)
 {
 	UNexusCreateSessionProxy* Proxy = NewObject<UNexusCreateSessionProxy>();

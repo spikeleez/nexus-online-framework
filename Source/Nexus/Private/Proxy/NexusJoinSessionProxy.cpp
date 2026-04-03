@@ -6,6 +6,8 @@
 #include "NexusOnlineSettings.h"
 #include "NexusLog.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusJoinSessionProxy)
+
 UNexusJoinSessionProxy* UNexusJoinSessionProxy::JoinNexusSession(UObject* InWorldContextObject, const FNexusSearchResult& InSearchResult, FName InSessionName /*= NAME_None*/, const bool bInAutoTravel /*= true*/)
 {
 	UNexusJoinSessionProxy* Proxy = NewObject<UNexusJoinSessionProxy>();

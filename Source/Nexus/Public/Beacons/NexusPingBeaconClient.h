@@ -8,7 +8,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusOnPingResultSignature, float, 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FNexusOnPingFailureSignature);
 
 /**
- * @class UNexusPingBeaconClient 
+ * @class ANexusPingBeaconClient 
  * 
  * Measures round-trip time (RTT) to a server using a lightweight beacon connection.
  *

@@ -1,11 +1,12 @@
 ﻿// Copyright Spike Plugins 2026. All Rights Reserved.
 
 #include "Managers/NexusPartyManager.h"
-
-#include "OnlineSubsystemUtils.h"
+#include "Managers/NexusBeaconManager.h"
 #include "Beacons/NexusPartyBeaconClient.h"
 #include "Beacons/NexusPartyBeaconHost.h"
-#include "Managers/NexusBeaconManager.h"
+#include "OnlineSubsystemUtils.h"
+
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusPartyManager)
 
 UNexusPartyManager::UNexusPartyManager(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

@@ -2,6 +2,8 @@
 #include "NexusLog.h"
 #include "TimerManager.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(NexusPingBeaconClient)
+
 ANexusPingBeaconClient::ANexusPingBeaconClient(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, bContinuousPing(false)
@@ -22,7 +24,7 @@ bool ANexusPingBeaconClient::ConnectDirect(const FString& Address)
 
 	if (!BeaconURL.Valid)
 	{
-		NEXUS_LOG(LogNexus, Error, TEXT("PingBeaconClient::ConnectDirect — Invalid URL: '%s'"), *Address);
+		NEXUS_LOG(LogNexus, Error, TEXT("PingBeaconClient::ConnectDirect Invalid URL: '%s'"), *Address);
 		return false;
 	}
 
