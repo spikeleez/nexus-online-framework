@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
 #include "NexusOnlineTypes.h"
 #include "NexusPartyManager.generated.h"
 
 class UGameInstance;
 class UNexusBeaconManager;
+class UNexusSessionManager;
 class ANexusPartyBeaconHost;
 class ANexusPartyBeaconClient;
 
@@ -57,27 +57,56 @@ public:
 	/** Fired when the party is disbanded or the local player is kicked. */
 	UPROPERTY(BlueprintAssignable, Category = "Nexus|Party|Events", meta=(DisplayName = "On Party Disbanded"))
 	FNexusOnPartyDisbandedSignature OnPartyDisbandedEvent;
+
+	/** Fired when a party invite is received from a friend via platform overlay. */
+	UPROPERTY(BlueprintAssignable, Category = "Nexus|Party|Events", meta=(DisplayName = "On Party Invite Received"))
+	FNexusOnPartyInviteReceivedSignature OnPartyInviteReceivedEvent;
+
+	/**
+	 * Fired when the party leader creates a game session.
+	 * Party members should bind here and call Join Nexus Session with the result,
+	 * or override UNexusOnlineContext::OnPartyGameSessionReady for automatic handling.
+	 */
+	UPROPERTY(BlueprintAssignable, Category = "Nexus|Party|Events", meta=(DisplayName = "On Party Game Session Ready"))
+	FNexusOnPartyGameSessionReadySignature OnPartyGameSessionReadyEvent;
 	
 public:
 	UNexusPartyManager(const FObjectInitializer& ObjectInitializer);
 	
 	/** Initialize the manager. Called by UNexusOnlineSubsystem. */
-	virtual void Initialize(UGameInstance* InGameInstance, UNexusBeaconManager* InBeaconManager);
+	virtual void Initialize(UGameInstance* InGameInstance, UNexusBeaconManager* InBeaconManager, UNexusSessionManager* InSessionManager);
 	
 	/** Shutdown and release all resources. Called by UNexusOnlineSubsystem. */
 	virtual void Deinitialize();
 	
 	/**
 	 * Create a party as the local player (becomes the leader).
-	 * Ensures the beacon host is running, then activates the party host object.
-	 * Result fires synchronously via OnPartyCreated.
 	 *
-	 * @param MaxSize  Maximum party size including the leader. Clamped to [2, 8].
-	 * @return True if party creation succeeded.
+	 * If Params.bCreateLobbySession is true (default), a hidden lobby session is created
+	 * alongside the beacon so friends can receive and accept invites via the platform overlay.
+	 * This lobby session is separate from your game session.
+	 *
+	 * @param Params  Party configuration. Use Make Default Party Params for sensible defaults.
+	 * @return True if party creation was initiated (lobby session creation is asynchronous).
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Nexus|Party|Leader")
-	bool CreateParty(int32 MaxSize = 4);
+	bool CreateParty(FNexusPartyHostParams Params);
+
+	/** Legacy overload — preserves compatibility. Prefer CreateParty(FNexusPartyHostParams). */
+	UFUNCTION(BlueprintCallable, Category = "Nexus|Party|Leader", meta = (DeprecatedFunction,
+			DeprecationMessage = "Use CreateParty(FNexusPartyHostParams) instead."))
+	bool CreatePartyWithSize(int32 MaxSize = 4);
 	
+	/**
+	 * Send a party invite to a friend via the platform overlay (Steam / EOS).
+	 * Requires the party to be active (IsInParty() && IsPartyLeader()).
+	 *
+	 * @param FriendId  Unique ID of the friend to invite.
+	 * @return True if the invite was dispatched.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Nexus|Party|Leader")
+	bool SendPartyInvite(const FUniqueNetIdRepl& FriendId);
+
 	/**
 	 * Disband the party (leader only).
 	 * All members receive a kick notification. OnPartyDisbanded fires.
@@ -96,15 +125,33 @@ public:
 	
 	/**
 	 * Join a party hosted by another player (async).
-	 * Result fires via OnPartyJoined after the beacon handshake completes.
+	 * Prefer JoinPartyFromSession when you have an FNexusSearchResult — it derives
+	 * the beacon address automatically.
 	 *
-	 * @param HostAddress   IP address of the party leader's beacon host.
+	 * @param HostAddress   IP:port of the party leader's beacon host.
 	 * @param LocalPlayerId Local player's unique net ID.
 	 * @param DisplayName   Display name for the party roster.
 	 * @return True if the connection attempt was initiated.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Nexus|Party|Member")
 	bool JoinParty(const FString& HostAddress, const FUniqueNetIdRepl& LocalPlayerId, const FString& DisplayName);
+
+	/**
+	 * Join a party from an OSS search result (e.g., after accepting a party lobby invite).
+	 * The beacon address is derived automatically from the session connection string.
+	 *
+	 * @param PartyLobbySession  The party's lobby session search result.
+	 * @return True if the connection attempt was initiated.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Nexus|Party|Member")
+	bool JoinPartyFromSession(const FNexusSearchResult& PartyLobbySession);
+
+	/**
+	 * Called by UNexusOnlineSubsystem when the local player (as party leader) successfully
+	 * creates a game session. Broadcasts OnPartyGameSessionReadyEvent to all party members.
+	 * Do not call this manually.
+	 */
+	void NotifyPartyOfGameSession(const FNexusSearchResult& GameSession);
 	
 	/**
 	 * Voluntarily leave the current party (member only).
@@ -136,45 +183,54 @@ protected:
 	virtual void OnClientJoinResult(ENexusPartyResult PartyResult, const FNexusPartyState& PartyState);
 	virtual void OnClientStateUpdated(const FNexusPartyState& PartyState);
 	virtual void OnClientKicked();
+
+	/** Called when the hidden lobby session for the party is created successfully. */
+	virtual void OnPartyLobbySessionCreated(FName SessionName, bool bWasSuccessful);
+
+	/** Handles party invite received via platform overlay → fires OnPartyInviteReceivedEvent. */
+	UFUNCTION()
+	virtual void OnPlatformPartyInviteReceived(const FNexusPendingInvite& Invite);
 	
 private:
-	/** Retrieve the local player's unique ID and display name from the GameInstance. */
 	bool GetLocalPlayerInfo(FUniqueNetIdRepl& OutId, FString& OutDisplayName) const;
+
+	/** Derives the beacon address from a lobby session connect string. */
+	bool GetBeaconAddressFromSession(const FNexusSearchResult& Session, FString& OutAddress) const;
 	
 	void BindPartyHostDelegates();
 	void UnbindPartyHostDelegates();
 	void BindPartyClientDelegates();
-	
-	/** Unbind client delegates and destroy the client beacon actor. */
 	void CleanupPartyClient();
+
+	/** Creates the hidden lobby session that enables platform overlay invites. */
+	bool CreatePartyLobbySession(const FNexusPartyHostParams& Params);
+
+	/** Destroys the party lobby session when the party is disbanded or the leader leaves. */
+	void DestroyPartyLobbySession();
 	
 private:
 	TWeakObjectPtr<UGameInstance> GameInstance;
 	TWeakObjectPtr<UNexusBeaconManager> BeaconManager;
+	TWeakObjectPtr<UNexusSessionManager> SessionManager;
 	
-	/**
-	 * Reference to the party host object on the beacon host.
-	 * Valid only when the local player is the party leader and a party is active.
-	 */
 	UPROPERTY()
 	TObjectPtr<ANexusPartyBeaconHost> PartyHost;
 	
-	/**
-	 * The client beacon for maintaining presence in another player's party.
-	 * Valid only when the local player is a non-leader party member.
-	 */
 	UPROPERTY()
 	TObjectPtr<ANexusPartyBeaconClient> PartyClient;
 	
-	/** Cached snapshot of the party state. Mirrors the authoritative state. */
 	FNexusPartyState CachedPartyState;
+
+	/** Session name used for the hidden party lobby session. */
+	static const FName PartyLobbySessionName;
+
+	/** Delegate handle for the party lobby session creation callback. */
+	FDelegateHandle LobbySessionCreatedHandle;
 	
-	// Delegate handles for host object
 	FDelegateHandle HostMemberJoinedDelegateHandle;
 	FDelegateHandle HostMemberLeftDelegateHandle;
 	FDelegateHandle HostStateChangedDelegateHandle;
 	
-	// Delegate handles for party client
 	FDelegateHandle ClientJoinResultDelegateHandle;
 	FDelegateHandle ClientStateUpdatedDelegateHandle;
 	FDelegateHandle ClientKickedDelegateHandle;

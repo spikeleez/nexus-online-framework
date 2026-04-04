@@ -65,7 +65,7 @@ void UNexusSessionManager::Deinitialize()
 	NEXUS_LOG(LogNexus, Log, TEXT("Deinitialized."));
 }
 
-bool UNexusSessionManager::CreateSession(const FName SessionName, const FNexuHostParams& HostParams)
+bool UNexusSessionManager::CreateSession(const FName SessionName, const FNexusHostParams& HostParams)
 {
 	if (OnCreateSessionCompleteDelegateHandle.IsValid())
 	{
@@ -144,7 +144,7 @@ bool UNexusSessionManager::CreateSession(const FName SessionName, const FNexuHos
 	return true;
 }
 
-bool UNexusSessionManager::UpdateSession(const FName SessionName, const FNexuHostParams& NewHostParams)
+bool UNexusSessionManager::UpdateSession(const FName SessionName, const FNexusHostParams& NewHostParams)
 {
 	if (OnSessionUpdateCompleteDelegateHandle.IsValid())
 	{

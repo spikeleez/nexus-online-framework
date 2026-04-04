@@ -6,7 +6,7 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(NexusUpdateSessionProxy)
 
-UNexusUpdateSessionProxy* UNexusUpdateSessionProxy::UpdateNexusSession(UObject* WorldContextObject, FNexuHostParams NewHostParams, FName SessionName)
+UNexusUpdateSessionProxy* UNexusUpdateSessionProxy::UpdateNexusSession(UObject* WorldContextObject, FNexusHostParams NewHostParams, FName SessionName)
 {
 	UNexusUpdateSessionProxy* Proxy = NewObject<UNexusUpdateSessionProxy>();
 	Proxy->WorldContextObject = WorldContextObject;

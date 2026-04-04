@@ -36,7 +36,6 @@ UNexusOnlineSettings::UNexusOnlineSettings(const FObjectInitializer& ObjectIniti
 	// Reservations
 	ReservationManagerClass = UNexusReservationManager::StaticClass();
 	bAutoStartReservationHost = false;
-	ReservationListenPort = 15001;
 
 	// Beacons
 	BeaconManagerClass = UNexusBeaconManager::StaticClass();

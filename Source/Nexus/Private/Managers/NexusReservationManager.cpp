@@ -97,7 +97,6 @@ bool UNexusReservationManager::StartReservationHost(FName SessionName, int32 Max
 	// InitHost sets up the UDP listener.
 	if (!ReservationHost->InitHostBeacon(ResolvedTeamCount, ResolvedTeamSize, MaxReservations, SessionName))
 	{
-		NEXUS_LOG(LogNexus, Error, TEXT("InitHost() failed on port %d."), Settings->ReservationListenPort);
 		ReservationHost->Destroy();
 		ReservationHost = nullptr;
 		return false;
@@ -119,7 +118,7 @@ bool UNexusReservationManager::StartReservationHost(FName SessionName, int32 Max
 	CachedTeamSize = ResolvedTeamSize;
 
 	bReservationHostActive = true;
-	NEXUS_LOG(LogNexus, Log, TEXT("ReservationHost started. Port=%d, Session='%s', MaxSlots=%d, Teams=%d, TeamSize=%d."), Settings->ReservationListenPort, *SessionName.ToString(), MaxReservations, ResolvedTeamCount, ResolvedTeamSize);
+	NEXUS_LOG(LogNexus, Log, TEXT("ReservationHost started. Session='%s', MaxSlots=%d, Teams=%d, TeamSize=%d."), *SessionName.ToString(), MaxReservations, ResolvedTeamCount, ResolvedTeamSize);
 	return true;
 }
 

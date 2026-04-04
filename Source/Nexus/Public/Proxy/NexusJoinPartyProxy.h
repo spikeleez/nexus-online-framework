@@ -13,7 +13,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusJoinPartyProxyComplete, ENexu
  * @class UNexusJoinPartyProxy
  *
  * Async Blueprint node for joining a party hosted by another player.
- * The result fires after the beacon connection + join handshake complete.
+ *
+ * Prefer JoinNexusParty (from SearchResult) whenever you have a party lobby session.
+ * Use JoinNexusPartyDirect only for LAN / direct-IP scenarios.
  */
 UCLASS()
 class NEXUS_API UNexusJoinPartyProxy : public UOnlineBlueprintCallProxyBase
@@ -31,15 +33,24 @@ public:
 	
 public:
 	/**
-	 * Join a party hosted by another player.
+	 * Join a party using the party lobby session (recommended).
+	 * The beacon address is derived automatically — no manual IP needed.
 	 *
-	 * @param WorldContextObject  World context.
-	 * @param HostAddress         IP address of the party leader's beacon host.
-	 * @param LocalPlayerId       The local player's unique net ID.
-	 * @param DisplayName         Display name for the party roster.
+	 * @param WorldContextObject World context.
+	 * @param PartyLobbySession The party's lobby session search result.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Nexus|Party", DisplayName = "Join Nexus Party", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", Keywords = "party group join connect"))
-	static UNexusJoinPartyProxy* JoinNexusParty(UObject* WorldContextObject, const FString& HostAddress, const FUniqueNetIdRepl& LocalPlayerId, const FString& DisplayName);
+	static UNexusJoinPartyProxy* JoinNexusParty(UObject* WorldContextObject, const FNexusSearchResult& PartyLobbySession);
+
+	/**
+	 * Join a party via a raw beacon address string.
+	 * Use only for LAN / direct-IP scenarios where you already know the host address.
+	 *
+	 * @param WorldContextObject World context.
+	 * @param HostAddress "IP:Port" of the party leader's beacon host.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Nexus|Party", DisplayName = "Join Nexus Party (Direct Address)", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", Keywords = "party group join direct ip address lan"))
+	static UNexusJoinPartyProxy* JoinNexusPartyDirect(UObject* WorldContextObject, const FString& HostAddress);
 	
 	//~Begin UOnlineBlueprintCallProxyBase interface
 	virtual void Activate() override;
@@ -56,7 +67,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<UObject> WorldContextObject;
 
-	FString HostAddress;
-	FString DisplayName;
-	FUniqueNetIdRepl LocalPlayerId;
+	FNexusSearchResult PartyLobbySession;
+	FString DirectAddress;
+	bool bUseSessionJoin = true;
 };

@@ -12,6 +12,7 @@ class UNexusSessionManager;
 class UNexusFriendManager;
 class UNexusBeaconManager;
 class UNexusReservationManager;
+class UNexusOnlineContext;
 
 /**
  * @class UNexusOnlineSubsystem
@@ -49,6 +50,9 @@ public:
 	/** @return The party manager responsible for party creation and membership. */
 	UNexusPartyManager* GetPartyManager() const { return PartyManager; }
 
+	/** @return The online context defining the flow for the game. */
+	UNexusOnlineContext* GetOnlineContext() const { return OnlineContext; }
+
 	/**
 	 * Get the Nexus subsystem from any world context object.
 	 * This is the recommended way to access Nexus from anywhere.
@@ -81,4 +85,8 @@ protected:
 	/** Party management instance. Created during Initialize. */
 	UPROPERTY()
 	TObjectPtr<UNexusPartyManager> PartyManager;
+
+	/** Game context logic instance. Created during Initialize. */
+	UPROPERTY()
+	TObjectPtr<UNexusOnlineContext> OnlineContext;
 };

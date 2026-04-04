@@ -11,6 +11,7 @@
 #include "Managers/NexusBeaconManager.h"
 #include "Managers/NexusPartyManager.h"
 #include "Managers/NexusReservationManager.h"
+#include "NexusOnlineContext.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(NexusOnlineSubsystem)
 
@@ -45,13 +46,23 @@ void UNexusOnlineSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		SessionManager->NativeOnSessionDestroyed.AddUObject(BeaconManager, &UNexusBeaconManager::OnSessionDestroyed);
 	
 		PartyManager = NewObject<UNexusPartyManager>(this, !OnlineSettings->PartyManagerClass.IsNull() ? OnlineSettings->PartyManagerClass.LoadSynchronous() : UNexusPartyManager::StaticClass());
-		PartyManager->Initialize(GameInstance, BeaconManager);
+		PartyManager->Initialize(GameInstance, BeaconManager, SessionManager);
 
 		ReservationManager = NewObject<UNexusReservationManager>(this, !OnlineSettings->ReservationManagerClass.IsNull() ? OnlineSettings->ReservationManagerClass.LoadSynchronous() : UNexusReservationManager::StaticClass());
 		ReservationManager->Initialize(GameInstance);
 
 		SessionManager->NativeOnSessionCreated.AddUObject(ReservationManager, &UNexusReservationManager::OnSessionCreated);
 		SessionManager->NativeOnSessionDestroyed.AddUObject(ReservationManager, &UNexusReservationManager::OnSessionDestroyed);
+
+		// Initialize Context
+		OnlineContext = NewObject<UNexusOnlineContext>(this, !OnlineSettings->OnlineContextClass.IsNull() ? OnlineSettings->OnlineContextClass.LoadSynchronous() : UNexusOnlineContext::StaticClass());
+		
+		SessionManager->NativeOnSessionDestroyed.AddUObject(OnlineContext, &UNexusOnlineContext::OnSessionDestroyedForContext);
+		PartyManager->OnPartyDisbandedEvent.AddDynamic(OnlineContext, &UNexusOnlineContext::OnPartyDisbandedForContext);
+		PartyManager->OnPartyMemberJoinedEvent.AddDynamic(OnlineContext, &UNexusOnlineContext::OnPartyMemberJoinedForContext);
+		PartyManager->OnPartyMemberLeftEvent.AddDynamic(OnlineContext, &UNexusOnlineContext::OnPartyMemberLeftForContext);
+		
+		OnlineContext->Initialize(GameInstance);
 	}
 
 	NEXUS_LOG(LogNexus, Log, TEXT("Initialized. Online subsystem: %s"), *GetOnlineSubsystemName());
@@ -87,6 +98,12 @@ void UNexusOnlineSubsystem::Deinitialize()
 	{
 		BeaconManager->Deinitialize();
 		BeaconManager = nullptr;
+	}
+
+	if (IsValid(OnlineContext))
+	{
+		OnlineContext->Deinitialize();
+		OnlineContext = nullptr;
 	}
 
 	NEXUS_LOG(LogNexus, Log, TEXT("Deinitialized."));

@@ -11,6 +11,7 @@ class UNexusReservationManager;
 class UNexusBeaconManager;
 class UNexusPartyManager;
 class UNexusFriendManager;
+class UNexusOnlineContext;
 class ANexusPingBeaconHost;
 class ANexusPingBeaconClient;
 
@@ -31,6 +32,15 @@ public:
 	static const UNexusOnlineSettings* Get() { return GetDefault<UNexusOnlineSettings>(); }
 
 public:
+	/**
+	 * Your game-specific online context class.
+	 * Create a Blueprint subclass of NexusOnlineContext, override the events you need,
+	 * and register it here. Nexus will instantiate it automatically on game start.
+	 * If left empty, the base UNexusOnlineContext is used (all events are no-ops).
+	 */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Context", meta = (AllowedClasses = "/Script/Nexus.NexusOnlineContext"))
+	TSoftClassPtr<UNexusOnlineContext> OnlineContextClass;
+
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Session", meta = (AllowedClasses = "/Script/Nexus.NexusSessionManager"))
 	TSoftClassPtr<UNexusSessionManager> SessionManagerClass;
 	
@@ -107,13 +117,6 @@ public:
 	 */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Reservations")
 	uint8 bAutoStartReservationHost:1;
-
-	/**
-	 * Port the reservation host listens on. Must differ from BeaconListenPort.
-	 * Default: 15001.
-	 */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Reservations", meta = (ClampMin = "1024", ClampMax = "65535"))
-	int32 ReservationListenPort;
 
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Beacons", meta = (AllowedClasses = "/Script/Nexus.NexusBeaconManager"))
 	TSoftClassPtr<UNexusBeaconManager> BeaconManagerClass;

@@ -1,24 +1,33 @@
-﻿// Copyright Spike Plugins 2026. All Rights Reserved.
+// Copyright Spike Plugins 2026. All Rights Reserved.
 
 #include "Proxy/NexusJoinPartyProxy.h"
 #include "NexusOnlineSubsystem.h"
 #include "Managers/NexusPartyManager.h"
+#include "NexusOnlineLibrary.h"
+#include "NexusLog.h"
 
-UNexusJoinPartyProxy* UNexusJoinPartyProxy::JoinNexusParty(UObject* WorldContextObject, const FString& HostAddress, const FUniqueNetIdRepl& LocalPlayerId, const FString& DisplayName)
+UNexusJoinPartyProxy* UNexusJoinPartyProxy::JoinNexusParty(UObject* WorldContextObject, const FNexusSearchResult& PartyLobbySession)
 {
 	UNexusJoinPartyProxy* Proxy = NewObject<UNexusJoinPartyProxy>();
 	Proxy->WorldContextObject = WorldContextObject;
-	Proxy->HostAddress = HostAddress;
-	Proxy->LocalPlayerId = LocalPlayerId;
-	Proxy->DisplayName = DisplayName;
-	
+	Proxy->PartyLobbySession = PartyLobbySession;
+	Proxy->bUseSessionJoin = true;
+	return Proxy;
+}
+
+UNexusJoinPartyProxy* UNexusJoinPartyProxy::JoinNexusPartyDirect(UObject* WorldContextObject, const FString& HostAddress)
+{
+	UNexusJoinPartyProxy* Proxy = NewObject<UNexusJoinPartyProxy>();
+	Proxy->WorldContextObject = WorldContextObject;
+	Proxy->DirectAddress = HostAddress;
+	Proxy->bUseSessionJoin = false;
 	return Proxy;
 }
 
 void UNexusJoinPartyProxy::Activate()
 {
-	const UNexusOnlineSubsystem* NexusOnlineSubsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
-	if (!NexusOnlineSubsystem || !NexusOnlineSubsystem->GetPartyManager())
+	const UNexusOnlineSubsystem* NexusSubsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
+	if (!NexusSubsystem || !NexusSubsystem->GetPartyManager())
 	{
 		NEXUS_LOG(LogNexus, Error, TEXT("NexusOnlineSubsystem or PartyManager unavailable."));
 		OnFailure.Broadcast(ENexusPartyResult::InvalidState, FNexusPartyState());
@@ -26,22 +35,41 @@ void UNexusJoinPartyProxy::Activate()
 		return;
 	}
 
-	UNexusPartyManager* PartyManager = NexusOnlineSubsystem->GetPartyManager();
+	UNexusPartyManager* PartyManager = NexusSubsystem->GetPartyManager();
 	PartyManager->OnPartyJoinedEvent.AddDynamic(this, &UNexusJoinPartyProxy::OnPartyJoinedResult);
 
-	if (!PartyManager->JoinParty(HostAddress, LocalPlayerId, DisplayName))
+	bool bStarted = false;
+	if (bUseSessionJoin)
 	{
-		// JoinParty already broadcast a failure; OnPartyJoinedResult may have already fired.
+		bStarted = PartyManager->JoinPartyFromSession(PartyLobbySession);
+	}
+	else
+	{
+		ENexusBlueprintLibraryOutputResult IdResult;
+		const FUniqueNetIdRepl LocalId = UNexusOnlineLibrary::GetLocalPlayerUniqueId(WorldContextObject, IdResult);
+		if (!LocalId.IsValid())
+		{
+			OnFailure.Broadcast(ENexusPartyResult::InvalidState, FNexusPartyState());
+			UnbindFromManager();
+			SetReadyToDestroy();
+			return;
+		}
+
+		ENexusBlueprintLibraryOutputResult NameResult;
+		const FString LocalName = UNexusOnlineLibrary::GetLocalPlayerDisplayName(WorldContextObject, NameResult);
+		bStarted = PartyManager->JoinParty(DirectAddress, LocalId, LocalName);
+	}
+
+	if (!bStarted)
+	{
 		UnbindFromManager();
 		SetReadyToDestroy();
 	}
-	// Otherwise await the async OnPartyJoinedResult callback
 }
 
 void UNexusJoinPartyProxy::BeginDestroy()
 {
 	UnbindFromManager();
-	
 	Super::BeginDestroy();
 }
 
@@ -63,9 +91,9 @@ void UNexusJoinPartyProxy::OnPartyJoinedResult(ENexusPartyResult PartyResult, co
 
 void UNexusJoinPartyProxy::UnbindFromManager()
 {
-	const UNexusOnlineSubsystem* NexusOnlineSubsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
-	if (NexusOnlineSubsystem && NexusOnlineSubsystem->GetPartyManager())
+	const UNexusOnlineSubsystem* NexusSubsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
+	if (NexusSubsystem && NexusSubsystem->GetPartyManager())
 	{
-		NexusOnlineSubsystem->GetPartyManager()->OnPartyJoinedEvent.RemoveDynamic(this, &UNexusJoinPartyProxy::OnPartyJoinedResult);
+		NexusSubsystem->GetPartyManager()->OnPartyJoinedEvent.RemoveDynamic(this, &UNexusJoinPartyProxy::OnPartyJoinedResult);
 	}
 }

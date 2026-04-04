@@ -1,4 +1,4 @@
-﻿// Copyright Spike Plugins 2026. All Rights Reserved.
+// Copyright Spike Plugins 2026. All Rights Reserved.
 
 #include "Beacons/NexusPartyBeaconClient.h"
 #include "Beacons/NexusPartyBeaconHost.h"
@@ -40,19 +40,26 @@ bool ANexusPartyBeaconClient::ConnectToHost(const FString& HostAddress, int32 Po
 		return false;
 	}
 
-	const int32 EffectivePort = (Port > 0) ? Port : UNexusOnlineSettings::Get()->BeaconListenPort;
-	const FString FullAddress = FString::Printf(TEXT("%s:%d"), *HostAddress, EffectivePort);
+	FURL URL(nullptr, *HostAddress, TRAVEL_Absolute);
+	
+	if (Port > 0)
+	{
+		URL.Port = Port;
+	}
+	else if (!HostAddress.Contains(TEXT(":")))
+	{
+		URL.Port = UNexusOnlineSettings::Get()->BeaconListenPort;
+	}
 
-	FURL URL(nullptr, *FullAddress, TRAVEL_Absolute);
 	const bool bInitiated = InitClient(URL);
 
 	if (bInitiated)
 	{
-		NEXUS_LOG(LogNexus, Log, TEXT("[PartyClient] Connecting to party at '%s'."), *FullAddress);
+		NEXUS_LOG(LogNexus, Log, TEXT("[PartyClient] Connecting to party at '%s'."), *URL.ToString(true));
 	}
 	else
 	{
-		NEXUS_LOG(LogNexus, Error, TEXT("[PartyClient] InitClient failed for '%s'."), *FullAddress);
+		NEXUS_LOG(LogNexus, Error, TEXT("[PartyClient] InitClient failed for '%s'."), *URL.ToString(true));
 	}
 
 	return bInitiated;

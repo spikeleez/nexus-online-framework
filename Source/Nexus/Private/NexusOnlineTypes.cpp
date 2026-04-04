@@ -83,7 +83,7 @@ FNexusSessionSettings::FNexusSessionSettings(const FOnlineSessionSettings& InSes
 	bHidden = HiddenValue != 0;
 }
 
-FNexuHostParams::FNexuHostParams()
+FNexusHostParams::FNexusHostParams()
 	: StartingLevel(FString())
 	, ServerName(FString())
 	, MapName(FString())
@@ -101,7 +101,7 @@ FNexuHostParams::FNexuHostParams()
 
 }
 
-void FNexuHostParams::ToOnlineSessionSettings(FOnlineSessionSettings& OutSettings) const
+void FNexusHostParams::ToOnlineSessionSettings(FOnlineSessionSettings& OutSettings) const
 {
 	// If we have a full override, use it directly and return.
 	if (SessionSettingsOverride.IsSet())
@@ -151,7 +151,7 @@ void FNexuHostParams::ToOnlineSessionSettings(FOnlineSessionSettings& OutSetting
 	}
 }
 
-bool FNexuHostParams::IsValid(const bool bLogErrors /*= true*/) const
+bool FNexusHostParams::IsValid(const bool bLogErrors /*= true*/) const
 {
 	bool bIsValid = true;
 

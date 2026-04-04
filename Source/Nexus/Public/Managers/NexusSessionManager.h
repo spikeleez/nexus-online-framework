@@ -78,7 +78,7 @@ public:
 	 * @return True if the async request was successfully started.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Nexus|Session")
-	bool CreateSession(const FName SessionName, const FNexuHostParams& HostParams);
+	bool CreateSession(const FName SessionName, const FNexusHostParams& HostParams);
 
 	/**
 	 * Updates the settings of an active session (e.g., change map, change max players).
@@ -88,7 +88,7 @@ public:
 	 * @return True if the asynchronous request was successfully initiated.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Nexus|Session")
-	bool UpdateSession(const FName SessionName, const FNexuHostParams& NewHostParams);
+	bool UpdateSession(const FName SessionName, const FNexusHostParams& NewHostParams);
 
 	/**
 	 * Find online sessions matching the given parameters.

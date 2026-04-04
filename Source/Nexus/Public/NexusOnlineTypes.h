@@ -389,6 +389,492 @@ inline const TCHAR* LexToString(ENexusPartyResult Result)
 }
 
 /**
+ * A single session setting (key-value pair) stored on a session.
+ * Uses FVariantData internally for type-safe storage across different value types.
+ * Multiple typed constructors provided for C++ convenience.
+ */
+USTRUCT(BlueprintType)
+struct NEXUS_API FNexuSessionSetting
+{
+	GENERATED_BODY()
+
+	/** Setting key. Must be unique within the session. */
+	FName Key;
+
+	/** The actual typed value. Not directly Blueprint-visible; use the typed constructors or Statics helpers. */
+	FVariantData Data;
+
+	/** How the setting is advertised with the online backend. */
+	EOnlineDataAdvertisementType::Type AdvertisementType;
+
+	/** Default constructor. */
+	FNexuSessionSetting();
+
+	/** Constructor from FVariantData. */
+	FNexuSessionSetting(const FName InKey, const FVariantData& InData, const EOnlineDataAdvertisementType::Type InAdvType);
+
+	/** Templated constructor for arbitrary value types (int32, FString, float, etc). */
+	template<typename ValueType>
+	FNexuSessionSetting(const FName InKey, const ValueType InValue, const EOnlineDataAdvertisementType::Type InAdvType)
+		: Key(InKey)
+		, Data(FVariantData())
+		, AdvertisementType(InAdvType)
+	{
+		Data.SetValue(InValue);
+	}
+
+	/** @return Whether this setting is valid (has a key and data). */
+	bool IsValid() const
+	{
+		return Key != NAME_None && Data.GetType() != EOnlineKeyValuePairDataType::Empty;
+	}
+};
+
+/**
+ * A single query setting used when searching for sessions.
+ * Pairs a key-value with a comparison operator for server-side or local filtering.
+ */
+USTRUCT(BlueprintType)
+struct NEXUS_API FNexusQuerySetting
+{
+	GENERATED_BODY()
+
+	/** Setting key to compare against. */
+	FName Key;
+
+	/** The value to compare with. */
+	FVariantData Data;
+
+	/** How to compare the values. */
+	EOnlineComparisonOp::Type ComparisonOp;
+
+	/** Default constructor. */
+	FNexusQuerySetting();
+
+	/** Constructor from FVariantData. */
+	FNexusQuerySetting(const FName InKey, const FVariantData& InData, const EOnlineComparisonOp::Type InCompOp);
+
+	/** Templated constructor for arbitrary value types. */
+	template<typename ValueType>
+	FNexusQuerySetting(const FName InKey, const ValueType InValue, const EOnlineComparisonOp::Type InCompOp)
+		: Key(InKey)
+		, Data(FVariantData())
+		, ComparisonOp(InCompOp)
+	{
+		Data.SetValue(InValue);
+	}
+
+	/** @return Whether this query setting is valid. */
+	bool IsValid() const
+	{
+		// We don't accept Near, In, NotIn comparison types they require special handling.
+		const bool bComparisonOpValid = ComparisonOp < EOnlineComparisonOp::Near;
+		return Key != NAME_None && Data.GetType() != EOnlineKeyValuePairDataType::Empty && bComparisonOpValid;
+	}
+
+	/**
+	 * Compare this query setting against a session setting value.
+	 * Assumes the session setting has the same value type as the query.
+	 * Used when auto-filtering search results locally.
+	 *
+	 * @param SessionSetting The session setting to compare against. Can be nullptr.
+	 * @return True if the comparison passes. False if nullptr or mismatch.
+	 */
+	template<typename ValueType>
+	bool CompareAgainst(const FOnlineSessionSetting* SessionSetting) const
+	{
+		if (!SessionSetting)
+		{
+			NEXUS_LOG(LogNexus, Error, TEXT("CompareAgainst called with nullptr!"));
+			return false;
+		}
+
+		ValueType QueryValue;
+		Data.GetValue(QueryValue);
+
+		ValueType SessionValue;
+		SessionSetting->Data.GetValue(SessionValue);
+
+		switch (ComparisonOp)
+		{
+		case EOnlineComparisonOp::Equals:				return SessionValue == QueryValue;
+		case EOnlineComparisonOp::NotEquals:			return SessionValue != QueryValue;
+		case EOnlineComparisonOp::GreaterThan:			return SessionValue > QueryValue;
+		case EOnlineComparisonOp::GreaterThanEquals:	return SessionValue >= QueryValue;
+		case EOnlineComparisonOp::LessThan:				return SessionValue < QueryValue;
+		case EOnlineComparisonOp::LessThanEquals:		return SessionValue <= QueryValue;
+		default:										return false;
+		}
+	}
+};
+
+/**
+ * Blueprint-friendly wrapper around FOnlineSessionSettings.
+ * Reads and exposes commonly used fields from the native session settings.
+ */
+USTRUCT(BlueprintType)
+struct NEXUS_API FNexusSessionSettings
+{
+	GENERATED_BODY()
+
+	/** The underlying native session settings. Not exposed to Blueprint. */
+	FOnlineSessionSettings SessionSettings;
+
+	/** Server/Lobby display name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
+	FString ServerName;
+
+	/** Map name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
+	FString MapName;
+
+	/** Game mode. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
+	FString GameMode;
+
+	/** Max session capacity. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
+	int32 MaxNumPlayers;
+
+	/** Whether the session is advertised. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
+	bool bShouldAdvertise;
+
+	/** Whether the session is hidden from normal searches. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
+	bool bHidden;
+
+	/** Whether players can join after the game starts. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
+	bool bAllowJoinInProgress;
+
+	/** Whether this is a LAN match. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
+	bool bIsLanMatch;
+
+	/** Whether the session uses presence (lobbies). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
+	bool bUsesPresence;
+
+	/** Whether invites are allowed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
+	bool bAllowInvites;
+
+	/** Whether joining via presence is allowed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
+	bool bAllowJoinViaPresence;
+
+	/** Default constructor. */
+	FNexusSessionSettings();
+
+	/** Constructor from native FOnlineSessionSettings. Extracts all known custom keys. */
+	FNexusSessionSettings(const FOnlineSessionSettings& InSessionSettings);
+
+	/**
+	 * Get a custom session setting by key.
+	 *
+	 * @param Key Setting key.
+	 * @param OutValue The output value.
+	 * @return True if the setting was found and extracted.
+	 */
+	template<typename ValueType>
+	bool GetSessionSetting(const FName Key, ValueType& OutValue) const
+	{
+		return SessionSettings.Get(Key, OutValue);
+	}
+};
+
+/**
+ * Parameters used when creating a party as the leader.
+ *
+ * bCreateLobbySession controls whether Nexus automatically creates an OSS lobby
+ * session alongside the party beacon host. This is required for platform-based
+ * invite discovery (Steam, EOS overlay). Disable only for direct-IP / LAN scenarios.
+ */
+USTRUCT(BlueprintType)
+struct NEXUS_API FNexusPartyHostParams
+{
+	GENERATED_BODY()
+
+	/** Maximum party size including the leader. Clamped to [2, 8]. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Party",
+			  meta = (ClampMin = "2", ClampMax = "8"))
+	int32 MaxSize = 4;
+
+	/**
+	 * When true (default), Nexus automatically creates a hidden OSS lobby session
+	 * alongside the party beacon so other players can discover and join via the
+	 * platform overlay (Steam / EOS). This session does NOT affect your game session.
+	 * Disable only for direct-IP or LAN scenarios.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Party")
+	bool bCreateLobbySession = true;
+
+	/** Whether platform overlay invites are allowed. Requires bCreateLobbySession = true. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Party")
+	bool bAllowInvites = true;
+
+	FNexusPartyHostParams() = default;
+
+	explicit FNexusPartyHostParams(int32 InMaxSize, bool bInCreateLobby = true)
+		: MaxSize(InMaxSize)
+		, bCreateLobbySession(bInCreateLobby)
+	{}
+};
+
+/**
+ * Parameters used when creating (hosting) a new session.
+ * Passed to CreateSession to define the session's properties.
+ */
+USTRUCT(BlueprintType)
+struct NEXUS_API FNexusHostParams
+{
+	GENERATED_BODY()
+
+	/**
+	 * The map to load via ServerTravel after session creation.
+	 * Empty string = do not travel (stay on current map).
+	 * Example: /Game/Maps/Dungeon_01
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
+	FString StartingLevel;
+
+	/** Display name of the server/lobby. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
+	FString ServerName;
+
+	/** Map name metadata stored on the session for display/filtering. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
+	FString MapName;
+
+	/** Game mode metadata stored on the session for display/filtering. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
+	FString GameMode;
+
+	/** Maximum number of players allowed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host", meta = (ClampMin = "1", ClampMax = "64"))
+	int32 MaxNumPlayers;
+
+	/** Whether the session should be publicly advertised. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
+	bool bShouldAdvertise;
+
+	/** Whether the session is hidden from normal searches (invite-only). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
+	bool bHidden;
+
+	/** Whether players can join after the game has started. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
+	bool bAllowJoinInProgress;
+
+	/** Whether this is a LAN match. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
+	bool bIsLanMatch;
+
+	/** Whether the session uses presence (Steam lobbies, EOS lobbies). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
+	bool bUsesPresence;
+
+	/** Whether invites to this session are allowed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
+	bool bAllowInvites;
+
+	/** Whether players can join via presence (friend list join). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
+	bool bAllowJoinViaPresence;
+
+	/** Additional custom session settings applied on top of the defaults. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, AdvancedDisplay, Category = "Nexus|Host")
+	TArray<FNexuSessionSetting> ExtraSessionSettings;
+
+	/**
+	 * Optional: override the FOnlineSessionSettings entirely.
+	 * When set, the individual fields above are ignored and this is used directly.
+	 * Not exposed to Blueprint C++ power-user feature.
+	 */
+	TOptional<FOnlineSessionSettings> SessionSettingsOverride;
+
+	/** Default constructor with sensible defaults for a co-op game. */
+	FNexusHostParams();
+
+	/**
+	 * Build FOnlineSessionSettings from these host params.
+	 * If SessionSettingsOverride is set, copies that instead.
+	 *
+	 * @param OutSettings The populated session settings.
+	 */
+	void ToOnlineSessionSettings(FOnlineSessionSettings& OutSettings) const;
+
+	/** @return Whether these host parameters pass validation. */
+	bool IsValid(const bool bLogErrors = true) const;
+
+	/** @return Whether session settings are overridden. */
+	FORCEINLINE bool HasSessionSettingsOverride() const
+	{
+		return SessionSettingsOverride.IsSet();
+	}
+};
+
+/**
+ * Parameters used when searching for sessions.
+ */
+USTRUCT(BlueprintType)
+struct NEXUS_API FNexusSearchParams
+{
+	GENERATED_BODY()
+
+	/** Maximum number of results to return. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Search", meta = (ClampMin = "1", ClampMax = "100"))
+	int32 MaxSearchResults;
+
+	/** Whether to search for LAN sessions. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Search")
+	bool bIsLanQuery;
+
+	/** Whether to search presence-based sessions (lobbies). Recommended for Steam/EOS. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Search")
+	bool bSearchPresence;
+
+	/** Extra query settings for server-side or local filtering. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, AdvancedDisplay, Category = "Nexus|Search")
+	TArray<FNexusQuerySetting> ExtraQuerySettings;
+
+	/** List of session unique IDs to exclude from results. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, AdvancedDisplay, Category = "Nexus|Search")
+	TArray<FUniqueNetIdRepl> IgnoredSessions;
+
+	/** Default constructor. */
+	FNexusSearchParams();
+
+	/** @return Whether these search parameters pass validation. */
+	bool IsValid(const bool bLogErrors = true) const;
+};
+
+/**
+ * A single search result representing a found online session.
+ * Wraps FOnlineSessionSearchResult with Blueprint-accessible helpers and sort predicates.
+ */
+USTRUCT(BlueprintType)
+struct NEXUS_API FNexusSearchResult
+{
+	GENERATED_BODY()
+
+	/** The underlying online search result. Not exposed to Blueprint. */
+	FOnlineSessionSearchResult OnlineResult;
+
+	/** Default constructor. */
+	FNexusSearchResult();
+
+	/** Constructor from a native online search result. */
+	FNexusSearchResult(const FOnlineSessionSearchResult& InResult);
+
+	/** @return Whether this search result contains valid data. */
+	bool IsValid() const;
+
+	/** @return The session type name (usually NAME_GameSession). */
+	FName GetSessionType() const;
+
+	/** @return The unique ID of the session itself. */
+	FUniqueNetIdRepl GetSessionUniqueId() const;
+
+	/** @return The unique ID of the session owner. */
+	FUniqueNetIdRepl GetOwnerUniqueId() const;
+
+	/** @return The display name of the session owner (truncated to 20 chars for safety). */
+	FString GetOwnerUsername() const;
+
+	/** @return Current number of players in the session. */
+	int32 GetNumPlayers() const;
+
+	/** @return Number of open (available) public slots. */
+	int32 GetNumOpenSlots() const;
+
+	/** @return Max number of public connections. */
+	int32 GetMaxPlayers() const;
+
+	/** @return Ping to the session in milliseconds. -1 if unknown. */
+	int32 GetPing() const;
+
+	/** @return Session settings wrapped in our Blueprint-friendly struct. */
+	FNexusSessionSettings GetSessionSettings() const;
+
+	/**
+	 * Returns the native engine search result.
+	 * Required for UNexusLinkBeaconManager::ConnectPingBeaconToSession
+	 * and any direct OSS calls that need the raw FOnlineSessionSearchResult.
+	 */
+	const FOnlineSessionSearchResult& GetNativeSearchResult() const { return OnlineResult; }
+
+	/**
+	 * Get a specific custom session setting value.
+	 *
+	 * @param Key Setting key.
+	 * @param OutValue The output value.
+	 * @return True if the setting was found.
+	 */
+	template<typename ValueType>
+	bool GetSessionSetting(const FName Key, ValueType& OutValue) const
+	{
+		return OnlineResult.Session.SessionSettings.Get(Key, OutValue);
+	}
+
+	// -- Sort Predicates (for use with TArray::Sort) --
+
+	/** Sort by ping ascending (lowest ping first). */
+	static bool ComparePing(const FNexusSearchResult& A, const FNexusSearchResult& B)
+	{
+		return A.GetPing() < B.GetPing();
+	}
+
+	/** Sort by player count descending (fullest sessions first). */
+	static bool ComparePlayerCountDesc(const FNexusSearchResult& A, const FNexusSearchResult& B)
+	{
+		return A.GetNumPlayers() > B.GetNumPlayers();
+	}
+
+	/** Sort by open slots ascending (least available first). */
+	static bool CompareOpenSlotsAsc(const FNexusSearchResult& A, const FNexusSearchResult& B)
+	{
+		return A.GetNumOpenSlots() < B.GetNumOpenSlots();
+	}
+};
+
+/**
+ * A party invite received via platform overlay (Steam / EOS).
+ * Contains every piece of information needed to accept with a single Blueprint node.
+ * Do not construct this manually — it is produced by UNexusPartyManager.
+ */
+USTRUCT(BlueprintType)
+struct NEXUS_API FNexusPendingPartyInvite
+{
+	GENERATED_BODY()
+
+	/** Unique ID of the player who sent the invite. */
+	UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+	FUniqueNetIdRepl FromId;
+
+	/** Display name of the player who sent the invite. */
+	UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+	FString FromDisplayName;
+
+	/**
+	 * The party lobby session. Used internally by AcceptNexusPartyInvite to join
+	 * the beacon without any additional input from the caller.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+	FNexusSearchResult PartyLobbySession;
+
+	/** Real time (seconds since app start) when the invite was received. */
+	UPROPERTY(BlueprintReadOnly, Category = "Nexus|Party")
+	float TimeReceived = 0.f;
+
+	FNexusPendingPartyInvite() = default;
+
+	/** @return Whether this invite contains enough data to be accepted. */
+	bool IsValid() const { return FromId.IsValid() && PartyLobbySession.IsValid(); }
+};
+
+/**
  * Represents one non-leader player inside a party.
  * The leader is stored separately in FNexusPartyState::LeaderId.
  */
@@ -624,419 +1110,6 @@ struct NEXUS_API FNexusReservationSummary
 };
 
 /**
- * A single session setting (key-value pair) stored on a session.
- * Uses FVariantData internally for type-safe storage across different value types.
- * Multiple typed constructors provided for C++ convenience.
- */
-USTRUCT(BlueprintType)
-struct NEXUS_API FNexuSessionSetting
-{
-	GENERATED_BODY()
-
-	/** Setting key. Must be unique within the session. */
-	FName Key;
-
-	/** The actual typed value. Not directly Blueprint-visible; use the typed constructors or Statics helpers. */
-	FVariantData Data;
-
-	/** How the setting is advertised with the online backend. */
-	EOnlineDataAdvertisementType::Type AdvertisementType;
-
-	/** Default constructor. */
-	FNexuSessionSetting();
-
-	/** Constructor from FVariantData. */
-	FNexuSessionSetting(const FName InKey, const FVariantData& InData, const EOnlineDataAdvertisementType::Type InAdvType);
-
-	/** Templated constructor for arbitrary value types (int32, FString, float, etc). */
-	template<typename ValueType>
-	FNexuSessionSetting(const FName InKey, const ValueType InValue, const EOnlineDataAdvertisementType::Type InAdvType)
-		: Key(InKey)
-		, Data(FVariantData())
-		, AdvertisementType(InAdvType)
-	{
-		Data.SetValue(InValue);
-	}
-
-	/** @return Whether this setting is valid (has a key and data). */
-	bool IsValid() const
-	{
-		return Key != NAME_None && Data.GetType() != EOnlineKeyValuePairDataType::Empty;
-	}
-};
-
-/**
- * A single query setting used when searching for sessions.
- * Pairs a key-value with a comparison operator for server-side or local filtering.
- */
-USTRUCT(BlueprintType)
-struct NEXUS_API FNexusQuerySetting
-{
-	GENERATED_BODY()
-
-	/** Setting key to compare against. */
-	FName Key;
-
-	/** The value to compare with. */
-	FVariantData Data;
-
-	/** How to compare the values. */
-	EOnlineComparisonOp::Type ComparisonOp;
-
-	/** Default constructor. */
-	FNexusQuerySetting();
-
-	/** Constructor from FVariantData. */
-	FNexusQuerySetting(const FName InKey, const FVariantData& InData, const EOnlineComparisonOp::Type InCompOp);
-
-	/** Templated constructor for arbitrary value types. */
-	template<typename ValueType>
-	FNexusQuerySetting(const FName InKey, const ValueType InValue, const EOnlineComparisonOp::Type InCompOp)
-		: Key(InKey)
-		, Data(FVariantData())
-		, ComparisonOp(InCompOp)
-	{
-		Data.SetValue(InValue);
-	}
-
-	/** @return Whether this query setting is valid. */
-	bool IsValid() const
-	{
-		// We don't accept Near, In, NotIn comparison types they require special handling.
-		const bool bComparisonOpValid = ComparisonOp < EOnlineComparisonOp::Near;
-		return Key != NAME_None && Data.GetType() != EOnlineKeyValuePairDataType::Empty && bComparisonOpValid;
-	}
-
-	/**
-	 * Compare this query setting against a session setting value.
-	 * Assumes the session setting has the same value type as the query.
-	 * Used when auto-filtering search results locally.
-	 *
-	 * @param SessionSetting The session setting to compare against. Can be nullptr.
-	 * @return True if the comparison passes. False if nullptr or mismatch.
-	 */
-	template<typename ValueType>
-	bool CompareAgainst(const FOnlineSessionSetting* SessionSetting) const
-	{
-		if (!SessionSetting)
-		{
-			NEXUS_LOG(LogNexus, Error, TEXT("CompareAgainst called with nullptr!"));
-			return false;
-		}
-
-		ValueType QueryValue;
-		Data.GetValue(QueryValue);
-
-		ValueType SessionValue;
-		SessionSetting->Data.GetValue(SessionValue);
-
-		switch (ComparisonOp)
-		{
-		case EOnlineComparisonOp::Equals:				return SessionValue == QueryValue;
-		case EOnlineComparisonOp::NotEquals:			return SessionValue != QueryValue;
-		case EOnlineComparisonOp::GreaterThan:			return SessionValue > QueryValue;
-		case EOnlineComparisonOp::GreaterThanEquals:	return SessionValue >= QueryValue;
-		case EOnlineComparisonOp::LessThan:				return SessionValue < QueryValue;
-		case EOnlineComparisonOp::LessThanEquals:		return SessionValue <= QueryValue;
-		default:										return false;
-		}
-	}
-};
-
-/**
- * Blueprint-friendly wrapper around FOnlineSessionSettings.
- * Reads and exposes commonly used fields from the native session settings.
- */
-USTRUCT(BlueprintType)
-struct NEXUS_API FNexusSessionSettings
-{
-	GENERATED_BODY()
-
-	/** The underlying native session settings. Not exposed to Blueprint. */
-	FOnlineSessionSettings SessionSettings;
-
-	/** Server/Lobby display name. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
-	FString ServerName;
-
-	/** Map name. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
-	FString MapName;
-
-	/** Game mode. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
-	FString GameMode;
-
-	/** Max session capacity. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
-	int32 MaxNumPlayers;
-
-	/** Whether the session is advertised. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
-	bool bShouldAdvertise;
-
-	/** Whether the session is hidden from normal searches. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
-	bool bHidden;
-
-	/** Whether players can join after the game starts. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
-	bool bAllowJoinInProgress;
-
-	/** Whether this is a LAN match. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
-	bool bIsLanMatch;
-
-	/** Whether the session uses presence (lobbies). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
-	bool bUsesPresence;
-
-	/** Whether invites are allowed. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
-	bool bAllowInvites;
-
-	/** Whether joining via presence is allowed. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus")
-	bool bAllowJoinViaPresence;
-
-	/** Default constructor. */
-	FNexusSessionSettings();
-
-	/** Constructor from native FOnlineSessionSettings. Extracts all known custom keys. */
-	FNexusSessionSettings(const FOnlineSessionSettings& InSessionSettings);
-
-	/**
-	 * Get a custom session setting by key.
-	 *
-	 * @param Key Setting key.
-	 * @param OutValue The output value.
-	 * @return True if the setting was found and extracted.
-	 */
-	template<typename ValueType>
-	bool GetSessionSetting(const FName Key, ValueType& OutValue) const
-	{
-		return SessionSettings.Get(Key, OutValue);
-	}
-};
-
-/**
- * Parameters used when creating (hosting) a new session.
- * Passed to CreateSession to define the session's properties.
- */
-USTRUCT(BlueprintType)
-struct NEXUS_API FNexuHostParams
-{
-	GENERATED_BODY()
-
-	/**
-	 * The map to load via ServerTravel after session creation.
-	 * Empty string = do not travel (stay on current map).
-	 * Example: /Game/Maps/Dungeon_01
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
-	FString StartingLevel;
-
-	/** Display name of the server/lobby. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
-	FString ServerName;
-
-	/** Map name metadata stored on the session for display/filtering. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
-	FString MapName;
-
-	/** Game mode metadata stored on the session for display/filtering. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
-	FString GameMode;
-
-	/** Maximum number of players allowed. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host", meta = (ClampMin = "1", ClampMax = "64"))
-	int32 MaxNumPlayers;
-
-	/** Whether the session should be publicly advertised. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
-	bool bShouldAdvertise;
-
-	/** Whether the session is hidden from normal searches (invite-only). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
-	bool bHidden;
-
-	/** Whether players can join after the game has started. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
-	bool bAllowJoinInProgress;
-
-	/** Whether this is a LAN match. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
-	bool bIsLanMatch;
-
-	/** Whether the session uses presence (Steam lobbies, EOS lobbies). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
-	bool bUsesPresence;
-
-	/** Whether invites to this session are allowed. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
-	bool bAllowInvites;
-
-	/** Whether players can join via presence (friend list join). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Host")
-	bool bAllowJoinViaPresence;
-
-	/** Additional custom session settings applied on top of the defaults. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, AdvancedDisplay, Category = "Nexus|Host")
-	TArray<FNexuSessionSetting> ExtraSessionSettings;
-
-	/**
-	 * Optional: override the FOnlineSessionSettings entirely.
-	 * When set, the individual fields above are ignored and this is used directly.
-	 * Not exposed to Blueprint C++ power-user feature.
-	 */
-	TOptional<FOnlineSessionSettings> SessionSettingsOverride;
-
-	/** Default constructor with sensible defaults for a co-op game. */
-	FNexuHostParams();
-
-	/**
-	 * Build FOnlineSessionSettings from these host params.
-	 * If SessionSettingsOverride is set, copies that instead.
-	 *
-	 * @param OutSettings The populated session settings.
-	 */
-	void ToOnlineSessionSettings(FOnlineSessionSettings& OutSettings) const;
-
-	/** @return Whether these host parameters pass validation. */
-	bool IsValid(const bool bLogErrors = true) const;
-
-	/** @return Whether session settings are overridden. */
-	FORCEINLINE bool HasSessionSettingsOverride() const
-	{
-		return SessionSettingsOverride.IsSet();
-	}
-};
-
-/**
- * Parameters used when searching for sessions.
- */
-USTRUCT(BlueprintType)
-struct NEXUS_API FNexusSearchParams
-{
-	GENERATED_BODY()
-
-	/** Maximum number of results to return. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Search", meta = (ClampMin = "1", ClampMax = "100"))
-	int32 MaxSearchResults;
-
-	/** Whether to search for LAN sessions. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Search")
-	bool bIsLanQuery;
-
-	/** Whether to search presence-based sessions (lobbies). Recommended for Steam/EOS. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nexus|Search")
-	bool bSearchPresence;
-
-	/** Extra query settings for server-side or local filtering. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, AdvancedDisplay, Category = "Nexus|Search")
-	TArray<FNexusQuerySetting> ExtraQuerySettings;
-
-	/** List of session unique IDs to exclude from results. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, AdvancedDisplay, Category = "Nexus|Search")
-	TArray<FUniqueNetIdRepl> IgnoredSessions;
-
-	/** Default constructor. */
-	FNexusSearchParams();
-
-	/** @return Whether these search parameters pass validation. */
-	bool IsValid(const bool bLogErrors = true) const;
-};
-
-/**
- * A single search result representing a found online session.
- * Wraps FOnlineSessionSearchResult with Blueprint-accessible helpers and sort predicates.
- */
-USTRUCT(BlueprintType)
-struct NEXUS_API FNexusSearchResult
-{
-	GENERATED_BODY()
-
-	/** The underlying online search result. Not exposed to Blueprint. */
-	FOnlineSessionSearchResult OnlineResult;
-
-	/** Default constructor. */
-	FNexusSearchResult();
-
-	/** Constructor from a native online search result. */
-	FNexusSearchResult(const FOnlineSessionSearchResult& InResult);
-
-	/** @return Whether this search result contains valid data. */
-	bool IsValid() const;
-
-	/** @return The session type name (usually NAME_GameSession). */
-	FName GetSessionType() const;
-
-	/** @return The unique ID of the session itself. */
-	FUniqueNetIdRepl GetSessionUniqueId() const;
-
-	/** @return The unique ID of the session owner. */
-	FUniqueNetIdRepl GetOwnerUniqueId() const;
-
-	/** @return The display name of the session owner (truncated to 20 chars for safety). */
-	FString GetOwnerUsername() const;
-
-	/** @return Current number of players in the session. */
-	int32 GetNumPlayers() const;
-
-	/** @return Number of open (available) public slots. */
-	int32 GetNumOpenSlots() const;
-
-	/** @return Max number of public connections. */
-	int32 GetMaxPlayers() const;
-
-	/** @return Ping to the session in milliseconds. -1 if unknown. */
-	int32 GetPing() const;
-
-	/** @return Session settings wrapped in our Blueprint-friendly struct. */
-	FNexusSessionSettings GetSessionSettings() const;
-
-	/**
-	 * Returns the native engine search result.
-	 * Required for UNexusLinkBeaconManager::ConnectPingBeaconToSession
-	 * and any direct OSS calls that need the raw FOnlineSessionSearchResult.
-	 */
-	const FOnlineSessionSearchResult& GetNativeSearchResult() const { return OnlineResult; }
-
-	/**
-	 * Get a specific custom session setting value.
-	 *
-	 * @param Key Setting key.
-	 * @param OutValue The output value.
-	 * @return True if the setting was found.
-	 */
-	template<typename ValueType>
-	bool GetSessionSetting(const FName Key, ValueType& OutValue) const
-	{
-		return OnlineResult.Session.SessionSettings.Get(Key, OutValue);
-	}
-
-	// -- Sort Predicates (for use with TArray::Sort) --
-
-	/** Sort by ping ascending (lowest ping first). */
-	static bool ComparePing(const FNexusSearchResult& A, const FNexusSearchResult& B)
-	{
-		return A.GetPing() < B.GetPing();
-	}
-
-	/** Sort by player count descending (fullest sessions first). */
-	static bool ComparePlayerCountDesc(const FNexusSearchResult& A, const FNexusSearchResult& B)
-	{
-		return A.GetNumPlayers() > B.GetNumPlayers();
-	}
-
-	/** Sort by open slots ascending (least available first). */
-	static bool CompareOpenSlotsAsc(const FNexusSearchResult& A, const FNexusSearchResult& B)
-	{
-		return A.GetNumOpenSlots() < B.GetNumOpenSlots();
-	}
-};
-
-/**
  * Blueprint-friendly wrapper around FNamedOnlineSession.
  * Represents a session that the local player is currently part of.
  */
@@ -1217,13 +1290,22 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusOnPartyJoinedSignature, ENexu
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusOnPartyStateUpdatedSignature, const FNexusPartyState&, PartyState);
 
 /** Fired when a new member successfully joins the party. */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusOnPartyMemberJoinedSignature, const FNexusPartySlot&, NewMember, const FNexusPartyState, UpdatedState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusOnPartyMemberJoinedSignature, const FNexusPartySlot&, NewMember, const FNexusPartyState&, UpdatedState);
 
 /** Fired when a member leaves or is kicked from the party. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusOnPartyMemberLeftSignature, const FUniqueNetIdRepl&, MemberId, ENexusPartyMemberStatus, MemberStatus);
 
 /** Fired when the party is disbanded (by leader) or the local player is kicked. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusOnPartyDisbandedSignature, ENexusPartyResult, PartyResult);
+
+/** Fired when a party invite is received from a friend via platform overlay. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusOnPartyInviteReceivedSignature, const FNexusPendingPartyInvite&, Invite);
+
+/**
+ * Fired by UNexusPartyManager when the party leader has created a game session
+ * and all party members should join it. Members bind to this to auto-travel.
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FNexusOnPartyGameSessionReadySignature, const FNexusSearchResult&, GameSession);
 
 /** Fired when a session is created. (c++ only) */
 DECLARE_MULTICAST_DELEGATE_OneParam(FNexusNativeOnSessionCreatedSignature, ENexusCreateSessionResult /*Result*/);

@@ -13,6 +13,7 @@ class UNexusSessionManager;
 class UNexusFriendManager;
 class UNexusBeaconManager;
 class UNexusReservationManager;
+class UNexusOnlineContext;
 
 /**
  * @class UNexusOnlineLibrary
@@ -34,7 +35,7 @@ public:
 
 	/** Create a FNexusHostParams populated with defaults from Plugin Settings. */
 	UFUNCTION(Category = "Nexus|Session", BlueprintPure)
-	static FNexuHostParams MakeDefaultHostParams();
+	static FNexusHostParams MakeDefaultHostParams();
 
 	/** Create a FNexusSearchParams populated with defaults from Plugin Settings. */
 	UFUNCTION(Category = "Nexus|Session", BlueprintPure)
@@ -42,7 +43,7 @@ public:
 	
 	/** @return Whether the host params are valid. */
 	UFUNCTION(Category = "Nexus|Session", BlueprintPure, DisplayName = "Is Valid", meta = (ScriptMethod = "IsValid"))
-	static bool IsHostParamsValid(const FNexuHostParams& HostParams);
+	static bool IsHostParamsValid(const FNexusHostParams& HostParams);
 
 	/** @return Whether the search params are valid. */
 	UFUNCTION(Category = "Nexus|Session", BlueprintPure, DisplayName = "Is Valid", meta = (ScriptMethod = "IsValid"))
@@ -180,4 +181,8 @@ public:
 
 	UFUNCTION(Category = "Nexus|Party", BlueprintCallable, meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
 	static UNexusPartyManager* GetNexusPartyManager(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
+
+	/** Get the online context defining the flow for the game. */
+	UFUNCTION(Category = "Nexus|Context", BlueprintCallable, meta = (WorldContext = "WorldContextObject", ExpandEnumAsExecs = "OutResult"))
+	static UNexusOnlineContext* GetNexusOnlineContext(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult);
 };

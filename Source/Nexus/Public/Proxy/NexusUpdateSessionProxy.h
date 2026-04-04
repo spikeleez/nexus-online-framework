@@ -28,7 +28,7 @@ public:
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Nexus|Session", DisplayName = "Update Nexus Session", meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject", AdvancedDisplay = "SessionName", Keywords = "Update"))
-	static UNexusUpdateSessionProxy* UpdateNexusSession(UObject* WorldContextObject, FNexuHostParams NewHostParams, FName SessionName);
+	static UNexusUpdateSessionProxy* UpdateNexusSession(UObject* WorldContextObject, FNexusHostParams NewHostParams, FName SessionName);
 
 	//~Begin UOnlineBlueprintCallProxyBase interface
 	virtual void Activate() override;
@@ -44,7 +44,7 @@ private:
 	TObjectPtr<UObject> WorldContextObject;
 
 	FName SessionName;
-	FNexuHostParams HostParams;
+	FNexusHostParams HostParams;
 
 	FDelegateHandle DelegateHandle;
 };

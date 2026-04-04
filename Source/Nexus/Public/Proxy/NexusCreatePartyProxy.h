@@ -1,4 +1,4 @@
-﻿// Copyright Spike Plugins 2026. All Rights Reserved.
+// Copyright Spike Plugins 2026. All Rights Reserved.
 
 #pragma once
 
@@ -12,9 +12,15 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FNexusCreatePartyProxyComplete, ENe
 /**
  * @class UNexusCreatePartyProxy
  *
- * Async Blueprint node for creating a party.
- * Although CreateParty is synchronous internally, this proxy provides
- * a consistent latent-node API alongside the async JoinParty proxy.
+ * Async Blueprint node for creating a party as the local player (leader).
+ *
+ * If Params.bCreateLobbySession is true (default), this node waits for two things:
+ *   1. The party beacon to initialize (synchronous)
+ *   2. The hidden lobby session to be created (async)
+ * Only then does OnSuccess fire.
+ *
+ * Use Make Default Party Params to build the Params struct with sensible defaults.
+ * The OnSuccess pin fires with the resulting PartyState ready for display in your UI.
  */
 UCLASS()
 class NEXUS_API UNexusCreatePartyProxy : public UOnlineBlueprintCallProxyBase
@@ -22,11 +28,11 @@ class NEXUS_API UNexusCreatePartyProxy : public UOnlineBlueprintCallProxyBase
 	GENERATED_BODY()
 	
 public:
-	/** Fired when the party is created successfully. */
+	/** Fired when the party (and lobby session, if requested) is created successfully. */
 	UPROPERTY(BlueprintAssignable, Category = "Nexus|Events")
 	FNexusCreatePartyProxyComplete OnSuccess;
 	
-	/** Fired when party creation fails. */
+	/** Fired when party creation fails for any reason. */
 	UPROPERTY(BlueprintAssignable, Category = "Nexus|Events")
 	FNexusCreatePartyProxyComplete OnFailure;
 	
@@ -34,11 +40,11 @@ public:
 	/**
 	 * Create a party. The local player becomes the party leader.
 	 *
-	 * @param WorldContextObject  World context.
-	 * @param MaxSize             Maximum party size including the leader (clamped to [2, 8]).
+	 * @param WorldContextObject World context.
+	 * @param Params Party configuration. Use Make Default Party Params for sensible defaults.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Nexus|Party", DisplayName = "Create Nexus Party", meta=(WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", Keywords = "party group create host"))
-	static UNexusCreatePartyProxy* CreateNexusParty(UObject* WorldContextObject, int32 MaxSize = 4);
+	UFUNCTION(BlueprintCallable, Category = "Nexus|Party", DisplayName = "Create Nexus Party", meta = (WorldContext = "WorldContextObject", BlueprintInternalUseOnly = "True", Keywords = "party group create host leader"))
+	static UNexusCreatePartyProxy* CreateNexusParty(UObject* WorldContextObject, FNexusPartyHostParams Params);
 	
 	//~Begin UOnlineBlueprintCallProxyBase interface
 	virtual void Activate() override;
@@ -53,5 +59,5 @@ private:
 	UPROPERTY()
 	TObjectPtr<UObject> WorldContextObject;
 	
-	int32 MaxSize = 4;
+	FNexusPartyHostParams Params;
 };

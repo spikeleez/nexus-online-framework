@@ -1,5 +1,6 @@
 #include "Beacons/NexusPingBeaconClient.h"
 #include "NexusLog.h"
+#include "NexusOnlineSettings.h"
 #include "TimerManager.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(NexusPingBeaconClient)
@@ -26,6 +27,11 @@ bool ANexusPingBeaconClient::ConnectDirect(const FString& Address)
 	{
 		NEXUS_LOG(LogNexus, Error, TEXT("PingBeaconClient::ConnectDirect Invalid URL: '%s'"), *Address);
 		return false;
+	}
+
+	if (!Address.Contains(TEXT(":")))
+	{
+		BeaconURL.Port = UNexusOnlineSettings::Get()->BeaconListenPort;
 	}
 
 	return InitClient(BeaconURL);

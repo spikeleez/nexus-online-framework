@@ -179,11 +179,31 @@ UNexusPartyManager* UNexusOnlineLibrary::GetNexusPartyManager(const UObject* Wor
 	return PartyManager;
 }
 
-FNexuHostParams UNexusOnlineLibrary::MakeDefaultHostParams()
+UNexusOnlineContext* UNexusOnlineLibrary::GetNexusOnlineContext(const UObject* WorldContextObject, ENexusBlueprintLibraryOutputResult& OutResult)
+{
+	const UNexusOnlineSubsystem* Subsystem = UNexusOnlineSubsystem::Get(WorldContextObject);
+	if (!Subsystem)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return nullptr;
+	}
+
+	UNexusOnlineContext* Context = Subsystem->GetOnlineContext();
+	if (!Context)
+	{
+		OutResult = ENexusBlueprintLibraryOutputResult::NotValid;
+		return nullptr;
+	}
+
+	OutResult = ENexusBlueprintLibraryOutputResult::IsValid;
+	return Context;
+}
+
+FNexusHostParams UNexusOnlineLibrary::MakeDefaultHostParams()
 {
 	const UNexusOnlineSettings* Settings = UNexusOnlineSettings::Get();
 
-	FNexuHostParams Params;
+	FNexusHostParams Params;
 	Params.MaxNumPlayers = Settings->DefaultMaxPlayers;
 	Params.bAllowJoinInProgress = Settings->bDefaultAllowJoinInProgress;
 	Params.bUsesPresence = Settings->bDefaultUsesPresence;
@@ -248,7 +268,7 @@ FNexusQuerySetting UNexusOnlineLibrary::MakeQuerySettingFloat(FName Key, float V
 	return FNexusQuerySetting(Key, Value, static_cast<EOnlineComparisonOp::Type>(Comparison));
 }
 
-bool UNexusOnlineLibrary::IsHostParamsValid(const FNexuHostParams& HostParams)
+bool UNexusOnlineLibrary::IsHostParamsValid(const FNexusHostParams& HostParams)
 {
 	return HostParams.IsValid(false);
 }
